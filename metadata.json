@@ -1,0 +1,6 @@
+{
+  "name": "Downloader",
+  "description": "A responsive media downloader and manager with live progress queue, format selection, and library storage.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

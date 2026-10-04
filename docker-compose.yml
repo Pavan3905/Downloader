@@ -1,0 +1,22 @@
+services:
+  downloader:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${CLIPSTREAM_PORT:-8000}:8000"
+    environment:
+      CLIPSTREAM_HOST: 0.0.0.0
+      PORT: 8000
+      CLIPSTREAM_USERNAME: ${CLIPSTREAM_USERNAME:?Set CLIPSTREAM_USERNAME in .env}
+      CLIPSTREAM_PASSWORD: ${CLIPSTREAM_PASSWORD:?Set CLIPSTREAM_PASSWORD in .env}
+      CLIPSTREAM_DOWNLOAD_DIR: /data/downloads
+      CLIPSTREAM_DOWNLOAD_WORKERS: ${CLIPSTREAM_DOWNLOAD_WORKERS:-2}
+    volumes:
+      - clipstream-data:/data/downloads
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  clipstream-data:

@@ -14,6 +14,34 @@ export default function App() {
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Theme state: 'dark' | 'light'
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('clipstream_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {}
+    return 'dark';
+  });
+
+  useEffect(() => {
+    try {
+      if (theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      localStorage.setItem('clipstream_theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>({
     subtitle_mode: 'off',
     subtitle_languages: 'en.*,en',
@@ -133,6 +161,58 @@ export default function App() {
     }
   };
 
+  const handleScheduleJob = async (jobId: string, scheduledFor: string | null) => {
+    try {
+      const res = await fetch(`/api/downloads/${jobId}/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduled_for: scheduledFor }),
+      });
+      if (res.ok) {
+        showToast(scheduledFor ? 'Download scheduled successfully' : 'Download queued immediately');
+        await fetchJobs();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.error || 'Failed to update schedule');
+      }
+    } catch {
+      showToast('Error scheduling download');
+    }
+  };
+
+  const handleStartNow = async (jobId: string) => {
+    try {
+      const res = await fetch(`/api/downloads/${jobId}/start-now`, { method: 'POST' });
+      if (res.ok) {
+        showToast('Download started immediately');
+        await fetchJobs();
+      } else {
+        showToast('Failed to start download');
+      }
+    } catch {
+      showToast('Error starting download');
+    }
+  };
+
+  const handleCreateScheduledDownload = async (url: string, scheduledFor: string, options?: any) => {
+    try {
+      const res = await fetch('/api/downloads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, scheduled_for: scheduledFor, ...options }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to schedule download.');
+      }
+      showToast('Download scheduled with background worker!');
+      await fetchJobs();
+    } catch (err: any) {
+      showToast(err.message || 'Error scheduling download');
+      throw err;
+    }
+  };
+
   const handleDeleteFile = async (filename: string) => {
     try {
       await fetch(`/api/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
@@ -140,6 +220,25 @@ export default function App() {
       await fetchFiles();
     } catch {
       showToast('Failed to delete file');
+    }
+  };
+
+  const handleBulkDeleteFiles = async (filenames: string[]) => {
+    try {
+      const res = await fetch('/api/files/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(`${data.count || filenames.length} files removed from library`);
+        await fetchFiles();
+      } else {
+        showToast('Failed to delete files in bulk');
+      }
+    } catch {
+      showToast('Error deleting files');
     }
   };
 
@@ -162,18 +261,20 @@ export default function App() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-rose-500/30">
-      {/* Instagram Header */}
+    <div className={`min-h-screen ${theme === 'light' ? 'light bg-neutral-50 text-neutral-900' : 'bg-black text-white'} flex flex-col font-sans selection:bg-rose-500/30 transition-colors duration-200`}>
+      {/* Top Header with Theme Switcher & Status */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         activeQueueCount={activeQueueCount}
         savedCount={files.length}
+        theme={theme}
+        onToggleTheme={toggleTheme}
         onQuickPaste={handleQuickPaste}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 pb-24 md:pb-12">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 pb-24">
         {activeTab === 'inspect' && (
           <InspectPost
             onStartDownload={handleStartDownload}
@@ -185,8 +286,12 @@ export default function App() {
           <QueueFeed
             jobs={jobs}
             onCancelJob={handleCancelJob}
+            onScheduleJob={handleScheduleJob}
+            onStartNow={handleStartNow}
+            onCreateScheduled={handleCreateScheduledDownload}
             onNavigateToInspect={() => setActiveTab('inspect')}
             onNavigateToSaved={() => setActiveTab('saved')}
+            onNavigateToSettings={() => setActiveTab('settings')}
           />
         )}
 
@@ -194,6 +299,7 @@ export default function App() {
           <SavedLibrary
             files={files}
             onDeleteFile={handleDeleteFile}
+            onBulkDeleteFiles={handleBulkDeleteFiles}
             onRefresh={fetchFiles}
             onNavigateToInspect={() => setActiveTab('inspect')}
           />
@@ -204,17 +310,19 @@ export default function App() {
             settings={advancedSettings}
             setSettings={setAdvancedSettings}
             health={health}
+            theme={theme}
+            setTheme={setTheme}
           />
         )}
       </main>
 
-      {/* Floating Instagram-style Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-t border-neutral-800">
+      {/* Floating Instagram-style Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-t border-neutral-800 shadow-2xl">
         <div className="grid grid-cols-4 items-center h-14 max-w-md mx-auto">
           <button
             onClick={() => setActiveTab('inspect')}
-            className={`flex flex-col items-center justify-center gap-1 ${
-              activeTab === 'inspect' ? 'text-white' : 'text-neutral-500'
+            className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
+              activeTab === 'inspect' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
             }`}
           >
             <Compass className="w-5 h-5" />
@@ -223,31 +331,36 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab('queue')}
-            className={`relative flex flex-col items-center justify-center gap-1 ${
-              activeTab === 'queue' ? 'text-white' : 'text-neutral-500'
+            className={`relative flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
+              activeTab === 'queue' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
             }`}
           >
             <Activity className="w-5 h-5" />
             <span className="text-[10px] font-medium tracking-tight">Queue</span>
             {activeQueueCount > 0 && (
-              <span className="absolute top-1 right-5 w-2 h-2 rounded-full instagram-gradient" />
+              <span className="absolute top-1 right-5 w-2 h-2 rounded-full instagram-gradient animate-pulse" />
             )}
           </button>
 
           <button
             onClick={() => setActiveTab('saved')}
-            className={`flex flex-col items-center justify-center gap-1 ${
-              activeTab === 'saved' ? 'text-white' : 'text-neutral-500'
+            className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
+              activeTab === 'saved' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
             }`}
           >
             <Bookmark className="w-5 h-5" />
             <span className="text-[10px] font-medium tracking-tight">Saved</span>
+            {files.length > 0 && (
+              <span className="absolute top-1 right-5 text-[9px] font-mono text-neutral-400">
+                {files.length}
+              </span>
+            )}
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex flex-col items-center justify-center gap-1 ${
-              activeTab === 'settings' ? 'text-white' : 'text-neutral-500'
+            className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
+              activeTab === 'settings' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
             }`}
           >
             <Sliders className="w-5 h-5" />

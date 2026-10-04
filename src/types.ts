@@ -19,6 +19,18 @@ export interface PlaylistEntry {
   thumbnail: string | null;
 }
 
+export interface Chapter {
+  title: string;
+  start_time: number;
+  end_time: number;
+}
+
+export interface SubtitleTrack {
+  lang: string;
+  name: string;
+  ext: string;
+}
+
 export interface MediaInfo {
   id: string;
   title: string;
@@ -35,20 +47,25 @@ export interface MediaInfo {
   playlist_count: number | null;
   entries: PlaylistEntry[];
   formats: MediaFormat[];
+  chapters?: Chapter[];
+  subtitles?: SubtitleTrack[];
 }
 
 export interface DownloadJob {
   id: string;
   url: string;
   title: string;
-  status: 'queued' | 'downloading' | 'completed' | 'failed' | 'cancelled';
+  status: 'queued' | 'scheduled' | 'downloading' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   speed: number | null;
   eta: number | null;
   size: number | null;
   filename: string | null;
+  generated_files?: string[];
   error: string | null;
   created_at: string;
+  scheduled_for?: string | null;
+  options?: any;
 }
 
 export interface LibraryFile {
@@ -56,6 +73,7 @@ export interface LibraryFile {
   size: number;
   modified: string;
   url: string;
+  type?: 'video' | 'audio' | 'subtitle' | 'thumbnail' | 'metadata' | 'other';
 }
 
 export interface SystemHealth {
@@ -65,6 +83,7 @@ export interface SystemHealth {
   ffmpeg: boolean;
   ffprobe: boolean;
   js_runtime: string;
+  has_cookies?: boolean;
   active: number;
 }
 
@@ -86,4 +105,5 @@ export interface AdvancedSettings {
   socket_timeout: number;
   cookies_from_browser: string;
   proxy: string;
+  cookies?: string;
 }

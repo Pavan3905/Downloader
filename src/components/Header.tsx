@@ -1,11 +1,13 @@
 import React from 'react';
-import { Compass, Bookmark, Activity, Sliders, CheckCircle2, Link2 } from 'lucide-react';
+import { Compass, Bookmark, Activity, Sliders, CheckCircle2, Link2, Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: 'inspect' | 'queue' | 'saved' | 'settings';
   setActiveTab: (tab: 'inspect' | 'queue' | 'saved' | 'settings') => void;
   activeQueueCount: number;
   savedCount: number;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
   onQuickPaste?: () => void;
 }
 
@@ -14,6 +16,8 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   activeQueueCount,
   savedCount,
+  theme = 'dark',
+  onToggleTheme,
   onQuickPaste,
 }) => {
   return (
@@ -101,7 +105,22 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Right Action */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {onToggleTheme && (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="p-1.5 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-4 h-4 text-indigo-500 fill-indigo-500/20" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+              )}
+            </button>
+          )}
+
           {onQuickPaste && (
             <button
               onClick={onQuickPaste}

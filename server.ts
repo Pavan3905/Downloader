@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { createServer as createViteServer } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,11 +22,21 @@ const AUTH_PASSWORD = process.env.CLIPSTREAM_PASSWORD || '';
 const SHARE_TOKEN = process.env.CLIPSTREAM_SHARE_TOKEN || '';
 const FFMPEG_PATH = fs.existsSync('/usr/bin/ffmpeg') ? '/usr/bin/ffmpeg' : (process.env.CLIPSTREAM_FFMPEG_PATH || 'ffmpeg');
 const FFPROBE_PATH = fs.existsSync('/usr/bin/ffprobe') ? '/usr/bin/ffprobe' : (process.env.CLIPSTREAM_FFPROBE_PATH || 'ffprobe');
-const YTDLP_PATH = fs.existsSync(path.join(ROOT, 'bin', 'yt-dlp'))
-  ? path.join(ROOT, 'bin', 'yt-dlp')
-  : fs.existsSync('/tmp/yt-dlp')
-  ? '/tmp/yt-dlp'
-  : 'yt-dlp';
+// Resolve yt-dlp: local bin > /tmp > PATH (bare names are not absolute paths, so check them separately)
+function resolveYtDlp(): string {
+  const candidates = [path.join(ROOT, 'bin', 'yt-dlp'), '/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp'];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  try {
+    // Fall back to whatever is on PATH (e.g. pipx / npm global installs)
+    const out = execSync('command -v yt-dlp', { encoding: 'utf-8' }).trim();
+    if (out && fs.existsSync(out)) return out;
+  } catch {}
+  return candidates[0]; // will fail health check with a clear message
+}
+const YTDLP_PATH = resolveYtDlp();
+const HAS_YTDLP = fs.existsSync(YTDLP_PATH);
 
 interface DownloadJob {
   id: string;
@@ -68,18 +78,60 @@ function safeJob(job: DownloadJob) {
 }
 
 function sanitizeFilename(name: string): string {
-  return name.replace(/[/\\?%*:|"<>]/g, '_').trim();
+  return name.replace(/[/\\?%*:|"<>\u0000-\u001f]/g, '_').replace(/^\.+/, '').trim().slice(0, 200);
+}
+
+// Map quality tokens coming from the UI to a pixel height (NaN => no cap / best)
+function parseQualityHeight(quality: string): number {
+  const q = String(quality || 'best').trim().toLowerCase();
+  if (!q || q === 'best' || q === 'auto' || q === 'highest') return NaN;
+  if (q === 'worst' || q === 'lowest') return 0;
+  if (q.startsWith('height:')) return parseInt(q.split(':')[1], 10);
+  if (q.startsWith('audio')) return NaN;
+  const h = parseInt(q.replace(/[^0-9]/g, ''), 10);
+  return isNaN(h) ? NaN : h;
 }
 
 function getFormatSelector(quality: string, isAudioOnly: boolean): string {
   if (isAudioOnly) {
-    return 'ba[ext=m4a]/ba/b';
+    return 'ba/b';
   }
-  const height = parseInt(String(quality).replace(/[^0-9]/g, ''), 10);
+  const height = parseQualityHeight(quality);
   if (!isNaN(height) && height > 0) {
-    return `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}][ext=mp4]+ba[ext=m4a]/b[height<=${height}][ext=mp4]/bv*[height<=${height}]+ba/b`;
+    // Progressive MP4 first (single file, guaranteed browser-playable), then merged AVC+AAC, then anything <= height
+    return `b[height<=${height}][ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}][ext=mp4]+ba[ext=m4a]/b[height<=${height}][ext=mp4]/bv*[height<=${height}]+ba/b[height<=${height}]`;
   }
-  return 'bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b';
+  // Best: prefer in-browser-playable H.264/AAC MP4, fall back to any codec (VP9/AV1 merged into MP4 by ffmpeg)
+  return 'b[ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b';
+}
+
+// Run yt-dlp and collect stdout/stderr; resolves with exit code (never rejects on non-zero)
+function runYtDlp(args: string[], timeoutMs: number): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timedOut = false;
+    const child = spawn(YTDLP_PATH, args);
+    child.stdout.on('data', (d) => { stdout += d.toString(); });
+    child.stderr.on('data', (d) => { stderr += d.toString(); });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try { child.kill('SIGKILL'); } catch {}
+    }, timeoutMs);
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ code, stdout, stderr, timedOut });
+    });
+    child.on('error', () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ code: -1, stdout, stderr: stderr + '\nFailed to launch yt-dlp binary at ' + YTDLP_PATH, timedOut });
+    });
+  });
 }
 
 async function inspectUrl(targetUrl: string) {
@@ -113,45 +165,77 @@ async function inspectUrl(targetUrl: string) {
   let description = `Extracted from ${parsed.hostname}`;
   const isPlaylist = parsed.searchParams.has('list');
 
-  // Try extracting rich metadata with yt-dlp first
-  if (fs.existsSync(YTDLP_PATH) && /^https?:\/\//i.test(targetUrl)) {
+  // Extract real metadata with yt-dlp first (flat playlist entries so UI shows actual videos)
+  let realFormats: any[] = [];
+  let realEntries: any[] = [];
+  let realSubtitles: any[] = [];
+  let realChapters: any[] = [];
+  let isDirectMedia = /\.(mp4|webm|mov|m4v|mkv|mp3|m4a|wav|flac|ogg|opus|aac)(\?.*)?$/i.test(parsed.pathname);
+  if (HAS_YTDLP && !isDirectMedia && /^https?:\/\//i.test(targetUrl)) {
     try {
-      const jsonStr = await new Promise<string>((resolve, reject) => {
-        const inspectArgs = [
-          '--js-runtimes', 'node:/usr/bin/node',
-          '--dump-json',
-          '--no-playlist',
-          '--no-warnings',
-        ];
-        if (fs.existsSync(COOKIES_FILE)) {
-          inspectArgs.push('--cookies', COOKIES_FILE);
-        }
-        inspectArgs.push(targetUrl);
-        const proc = spawn(YTDLP_PATH, inspectArgs);
-        let out = '';
-        proc.stdout.on('data', (d) => { out += d.toString(); });
-        proc.on('close', (code) => {
-          if (code === 0 && out.trim()) resolve(out.trim());
-          else reject(new Error('yt-dlp failed'));
-        });
-        proc.on('error', reject);
-        setTimeout(() => {
-          proc.kill();
-          reject(new Error('yt-dlp timeout'));
-        }, 7000);
-      });
-
-      const data = JSON.parse(jsonStr);
-      if (data && data.title) {
-        title = data.title;
-        uploader = data.uploader || data.channel || data.creator || uploader;
-        duration = data.duration || duration;
-        thumbnail = data.thumbnail || thumbnail;
-        viewCount = data.view_count || viewCount;
-        description = data.description?.slice(0, 300) || description;
-        if (data.channel_url) channelUrl = data.channel_url;
+      const inspectArgs = ['--no-warnings', '--no-playlist'];
+      if (fs.existsSync(COOKIES_FILE)) inspectArgs.push('--cookies', COOKIES_FILE);
+      if (isPlaylist) {
+        inspectArgs.push('--flat-playlist', '--playlist-items', '1-25');
       }
-    } catch {
+      inspectArgs.push('--dump-single-json', targetUrl);
+      const { code, stdout, stderr, timedOut } = await runYtDlp(inspectArgs, 45000);
+      if (code === 0 && stdout.trim()) {
+        const data = JSON.parse(stdout.trim());
+        if (data && data.title) {
+          title = data.title;
+          uploader = data.uploader || data.channel || data.creator || uploader;
+          duration = data.duration || duration;
+          thumbnail = data.thumbnail || thumbnail;
+          viewCount = data.view_count || viewCount;
+          description = (data.description || '').slice(0, 300) || description;
+          if (data.channel_url) channelUrl = data.channel_url;
+          if (data.upload_date) { /* keep real upload date */ }
+        }
+        if (Array.isArray(data.formats) && data.formats.length) {
+          realFormats = data.formats
+            .filter((f: any) => f.format_id && f.ext !== 'm3u8' && f.protocol !== 'm3u8')
+            .map((f: any) => ({
+              id: String(f.format_id),
+              ext: f.ext || 'mp4',
+              resolution: f.resolution || (f.height ? `${f.width}x${f.height}` : null) || (f.vcodec === 'none' ? `Audio ${f.abr || ''}kbps` : 'Unknown'),
+              height: f.height || null,
+              fps: f.fps || null,
+              filesize: f.filesize || f.filesize_approx || null,
+              vcodec: f.vcodec || 'none',
+              acodec: f.acodec || 'none',
+              note: f.format_note || '',
+              tbr: f.tbr || null,
+            }));
+        }
+        if (Array.isArray(data.entries) && data.entries.length) {
+          realEntries = data.entries.slice(0, 25).map((e: any, i: number) => ({
+            id: e.id || `item_${i + 1}`,
+            title: e.title || `Item ${i + 1}`,
+            url: e.url || e.webpage_url || targetUrl,
+            duration: e.duration ?? null,
+            thumbnail: e.thumbnail || thumbnail || null,
+          }));
+        }
+        if (data.subtitles && typeof data.subtitles === 'object') {
+          for (const [lang, tracks] of Object.entries<any[]>(data.subtitles)) {
+            if (Array.isArray(tracks) && tracks.length) {
+              realSubtitles.push({ lang, name: lang, ext: tracks[0]?.ext || 'vtt' });
+            }
+          }
+        }
+        if (Array.isArray(data.chapters) && data.chapters.length) {
+          realChapters = data.chapters.map((c: any) => ({
+            title: c.title, start_time: c.start_time, end_time: c.end_time,
+          }));
+        }
+      } else {
+        const errLine = (stderr || '').split('\n').find((l: string) => l.includes('ERROR'));
+        if (errLine) console.log('[Inspect] yt-dlp:', errLine.trim());
+        if (timedOut) console.log('[Inspect] yt-dlp timed out');
+      }
+    } catch (e: any) {
+      console.log('[Inspect] yt-dlp metadata extraction failed:', e?.message || e);
       // Fallback to oEmbed / HTML meta parsing below
     }
   }
@@ -214,120 +298,21 @@ async function inspectUrl(targetUrl: string) {
     }
   }
 
-  const formats = [
-    {
-      id: 'best',
-      ext: 'mp4',
-      resolution: '4K Ultra HD (2160p60)',
-      height: 2160,
-      fps: 60,
-      filesize: 420000000,
-      vcodec: 'av01.0.12M.08',
-      acodec: 'mp4a.40.2',
-      note: 'Master Source Quality (AV1 / Opus / AAC)',
-      tbr: 18000,
-    },
-    {
-      id: 'height:1440',
-      ext: 'mp4',
-      resolution: '1440p QHD 60fps',
-      height: 1440,
-      fps: 60,
-      filesize: 280000000,
-      vcodec: 'vp09.00.41.08',
-      acodec: 'mp4a.40.2',
-      note: 'Quad HD High Frame Rate',
-      tbr: 11000,
-    },
-    {
-      id: 'height:1080',
-      ext: 'mp4',
-      resolution: '1080p Full HD 60fps',
-      height: 1080,
-      fps: 60,
-      filesize: 145000000,
-      vcodec: 'avc1.64002a',
-      acodec: 'mp4a.40.2',
-      note: 'Universal H.264 AVC / AAC High Profile',
-      tbr: 4500,
-    },
-    {
-      id: 'height:720',
-      ext: 'mp4',
-      resolution: '720p HD',
-      height: 720,
-      fps: 30,
-      filesize: 68000000,
-      vcodec: 'avc1.4d401f',
-      acodec: 'mp4a.40.2',
-      note: 'Standard HD stream',
-      tbr: 2200,
-    },
-    {
-      id: 'height:480',
-      ext: 'mp4',
-      resolution: '480p SD',
-      height: 480,
-      fps: 30,
-      filesize: 32000000,
-      vcodec: 'avc1.4d401e',
-      acodec: 'mp4a.40.2',
-      note: 'Mobile / low bandwidth',
-      tbr: 1100,
-    },
-    {
-      id: 'audio-best',
-      ext: 'mp3',
-      resolution: 'Audio (MP3 320kbps)',
-      height: null,
-      fps: null,
-      filesize: 14500000,
-      vcodec: 'none',
-      acodec: 'mp3',
-      note: 'Audiophile 320kbps CBR MP3',
-      tbr: 320,
-    },
-    {
-      id: 'audio-flac',
-      ext: 'flac',
-      resolution: 'Audio (FLAC Lossless)',
-      height: null,
-      fps: null,
-      filesize: 38000000,
-      vcodec: 'none',
-      acodec: 'flac',
-      note: 'Bit-perfect 24-bit Lossless Studio Audio',
-      tbr: 1411,
-    },
-    {
-      id: 'audio-m4a',
-      ext: 'm4a',
-      resolution: 'Audio (M4A / AAC 256kbps)',
-      height: null,
-      fps: null,
-      filesize: 11200000,
-      vcodec: 'none',
-      acodec: 'mp4a.40.2',
-      note: 'Apple Music / iTunes Native Format',
-      tbr: 256,
-    },
-  ];
+  // Real formats from yt-dlp when available; sensible quality presets otherwise
+  const formats = realFormats.length
+    ? realFormats
+    : (isDirectMedia
+        ? [{ id: 'best', ext: (parsed.pathname.split('.').pop() || 'mp4').toLowerCase(), resolution: 'Source File', height: null, fps: null, filesize: null, vcodec: 'unknown', acodec: 'unknown', note: 'Direct media file', tbr: null }]
+        : [
+            { id: 'best', ext: 'mp4', resolution: 'Best (auto)', height: null, fps: null, filesize: null, vcodec: 'unknown', acodec: 'unknown', note: 'Highest available compatible stream', tbr: null },
+            { id: 'height:1080', ext: 'mp4', resolution: '1080p', height: 1080, fps: null, filesize: null, vcodec: 'unknown', acodec: 'unknown', note: 'Full HD', tbr: null },
+            { id: 'height:720', ext: 'mp4', resolution: '720p', height: 720, fps: null, filesize: null, vcodec: 'unknown', acodec: 'unknown', note: 'HD', tbr: null },
+            { id: 'height:480', ext: 'mp4', resolution: '480p', height: 480, fps: null, filesize: null, vcodec: 'unknown', acodec: 'unknown', note: 'SD', tbr: null },
+            { id: 'audio-best', ext: 'mp3', resolution: 'Audio', height: null, fps: null, filesize: null, vcodec: 'none', acodec: 'mp3', note: 'Audio only (converted)', tbr: null },
+          ]);
 
-  const chapters = [
-    { title: '01. Intro & Context', start_time: 0, end_time: Math.min(45, duration * 0.2) },
-    { title: '02. Key Topic & Breakdown', start_time: Math.min(45, duration * 0.2), end_time: Math.min(140, duration * 0.6) },
-    { title: '03. Feature Demonstration', start_time: Math.min(140, duration * 0.6), end_time: Math.min(190, duration * 0.85) },
-    { title: '04. Summary & Closing Notes', start_time: Math.min(190, duration * 0.85), end_time: duration },
-  ];
-
-  const subtitles = [
-    { lang: 'en', name: 'English (Subtitles & CC)', ext: 'srt' },
-    { lang: 'es', name: 'Spanish / Español', ext: 'vtt' },
-    { lang: 'fr', name: 'French / Français', ext: 'vtt' },
-    { lang: 'de', name: 'German / Deutsch', ext: 'vtt' },
-    { lang: 'ja', name: 'Japanese / 日本語', ext: 'vtt' },
-    { lang: 'zh', name: 'Chinese / 简体中文', ext: 'vtt' },
-  ];
+  const chapters = realChapters;
+  const subtitles = realSubtitles;
 
   return {
     id: videoId || crypto.randomUUID().slice(0, 8),
@@ -338,18 +323,12 @@ async function inspectUrl(targetUrl: string) {
     channel_url: channelUrl,
     duration,
     view_count: viewCount,
-    upload_date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    upload_date: null,
     webpage_url: targetUrl,
     extractor: hostname.replace(/^www\./, '').split('.')[0],
-    is_playlist: isPlaylist,
-    playlist_count: isPlaylist ? 12 : null,
-    entries: isPlaylist
-      ? [
-          { id: 'item_1', title: `${title} - Part 1`, url: targetUrl, duration: 180, thumbnail },
-          { id: 'item_2', title: `${title} - Part 2`, url: targetUrl, duration: 240, thumbnail },
-          { id: 'item_3', title: `${title} - Part 3`, url: targetUrl, duration: 200, thumbnail },
-        ]
-      : [],
+    is_playlist: isPlaylist || realEntries.length > 1,
+    playlist_count: realEntries.length ? realEntries.length : (isPlaylist ? null : null),
+    entries: realEntries,
     formats,
     chapters,
     subtitles,
@@ -478,10 +457,14 @@ async function executeDownloadJob(job: DownloadJob) {
             job.url
           );
         } else {
+          const mergeFmt = opts.merge_output_format && opts.merge_output_format !== 'auto'
+            ? String(opts.merge_output_format)
+            : 'mp4';
           ytdlpArgs.push(
             '-f', getFormatSelector(opts.format_id || 'best', false),
-            '--merge-output-format', 'mp4',
-            '--postprocessor-args', 'Merger:-c:v copy -c:a aac -ac 2 -movflags +faststart',
+            '--merge-output-format', mergeFmt,
+            // Re-encode audio to AAC + stereo so merged files are universally playable (fixes "won't open / won't embed" after Opus/VP9 merges)
+            '--postprocessor-args', 'Merger:-c:v copy -c:a aac -b:a 192k -ac 2 -movflags +faststart',
             '-o', outputPath,
             job.url
           );
@@ -515,12 +498,26 @@ async function executeDownloadJob(job: DownloadJob) {
           child.on('close', async (code) => {
             if (code === 0 && fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
               downloadedDirectly = true;
-              // Guarantee faststart moov atom header for instant playback on Windows Media Player, QuickTime, and Web
-              if (outputPath.endsWith('.mp4')) {
-                const tempFast = `${outputPath}.fast.mp4`;
+              // Guarantee browser-playable H.264/AAC + faststart moov atom for instant playback & <video> embedding
+              const needsRemux = outputPath.endsWith('.mp4') || outputPath.endsWith('.mov') || outputPath.endsWith('.m4v');
+              if (needsRemux) {
+                let probeOk = false;
+                try {
+                  const probeOut = execSync(
+                    `${FFPROBE_PATH} -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 "${outputPath}" 2>/dev/null; ${FFPROBE_PATH} -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 "${outputPath}" 2>/dev/null`,
+                    { encoding: 'utf-8', timeout: 30000 }
+                  );
+                  probeOk = /h264/.test(probeOut) && /aac/.test(probeOut);
+                } catch {}
+                if (!probeOk) {
+                const tempFast = `${outputPath}.remux.mp4`;
                 try {
                   await new Promise<void>((r) => {
-                    const fast = spawn(FFMPEG_PATH, ['-y', '-i', outputPath, '-c', 'copy', '-movflags', '+faststart', tempFast]);
+                    const fast = spawn(FFMPEG_PATH, [
+                      '-y', '-i', outputPath,
+                      ...(probeOk ? ['-c', 'copy'] : ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-c:a', 'aac', '-b:a', '192k']),
+                      '-movflags', '+faststart', tempFast,
+                    ]);
                     fast.on('close', (fcode) => {
                       if (fcode === 0 && fs.existsSync(tempFast) && fs.statSync(tempFast).size > 1000) {
                         fs.renameSync(tempFast, outputPath);
@@ -534,6 +531,7 @@ async function executeDownloadJob(job: DownloadJob) {
                 } catch {
                   // Keep original if remux fails
                 }
+              }
               }
             }
             resolve();
@@ -776,6 +774,30 @@ async function startServer() {
       maxAge: 14 * 24 * 60 * 60 * 1000,
     });
     res.redirect('/');
+  });
+
+  // Image proxy for remote thumbnails (avoids hotlink / referrer blocking in the browser)
+  app.get('/api/proxy', async (req: Request, res: Response) => {
+    try {
+      const target = String(req.query.url || '');
+      if (!/^https?:\/\//i.test(target)) {
+        return res.status(400).json({ error: 'Invalid proxy URL.' });
+      }
+      const upstream = await fetch(target, {
+        headers: { 'User-Agent': 'Mozilla/5.0', Referer: 'https://www.google.com/' },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({ error: 'Upstream image unavailable.' });
+      }
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      const ct = upstream.headers.get('content-type') || 'image/jpeg';
+      res.setHeader('Content-Type', ct.startsWith('image/') ? ct : 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(buf);
+    } catch {
+      res.status(502).json({ error: 'Failed to proxy image.' });
+    }
   });
 
   // Inspect URL

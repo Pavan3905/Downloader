@@ -25,7 +25,7 @@ interface QueueFeedProps {
   onScheduleJob?: (id: string, scheduledFor: string | null) => Promise<void>;
   onStartNow?: (id: string) => Promise<void>;
   onCreateScheduled?: (url: string, scheduledFor: string, options?: any) => Promise<void>;
-  onNavigateToInspect: () => void;
+  onNavigateToInspect?: () => void;
   onNavigateToSaved: () => void;
   onNavigateToSettings?: () => void;
 }
@@ -40,6 +40,9 @@ export const QueueFeed: React.FC<QueueFeedProps> = ({
   onNavigateToSaved,
   onNavigateToSettings,
 }) => {
+  // Bottom nav owns tab switching; these CTAs fall back to a global navigate event when props are absent.
+  const goInspect = () => (onNavigateToInspect ? onNavigateToInspect() : window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'inspect' })));
+  const goSettings = () => (onNavigateToSettings ? onNavigateToSettings() : window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'settings' })));
   const [filter, setFilter] = useState<'all' | 'scheduled' | 'active' | 'completed'>('all');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
@@ -467,7 +470,7 @@ export const QueueFeed: React.FC<QueueFeedProps> = ({
               <span>Schedule a Link</span>
             </button>
             <button
-              onClick={onNavigateToInspect}
+              onClick={goInspect}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white instagram-gradient shadow-md active:scale-95 transition-all cursor-pointer"
             >
               <Compass className="w-3.5 h-3.5" />
@@ -576,9 +579,9 @@ export const QueueFeed: React.FC<QueueFeedProps> = ({
                             <span className="text-rose-400 block text-xs">
                               {job.error || 'Download failed'}
                             </span>
-                            {onNavigateToSettings && job.error?.toLowerCase().includes('cookie') && (
+                            {job.error?.toLowerCase().includes('cookie') && (
                               <button
-                                onClick={onNavigateToSettings}
+                                onClick={goSettings}
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-semibold hover:bg-rose-500/30 transition-all cursor-pointer"
                               >
                                 <span>Add YouTube Cookies in Settings</span>

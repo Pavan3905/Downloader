@@ -29,7 +29,7 @@ interface SavedLibraryProps {
   onDeleteFile: (filename: string) => Promise<void>;
   onBulkDeleteFiles?: (filenames: string[]) => Promise<void>;
   onRefresh: () => Promise<void>;
-  onNavigateToInspect: () => void;
+  onNavigateToInspect?: () => void;
 }
 
 export const SavedLibrary: React.FC<SavedLibraryProps> = ({
@@ -493,7 +493,7 @@ export const SavedLibrary: React.FC<SavedLibraryProps> = ({
             </p>
           </div>
           <button
-            onClick={onNavigateToInspect}
+            onClick={() => (onNavigateToInspect ? onNavigateToInspect() : window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'inspect' })))}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white instagram-gradient shadow-md active:scale-95 transition-all cursor-pointer"
           >
             <Compass className="w-3.5 h-3.5" />

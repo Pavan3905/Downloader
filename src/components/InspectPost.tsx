@@ -28,7 +28,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { MediaInfo, AdvancedSettings } from '../types';
-import { SupportedPlatforms } from './SupportedPlatforms';
 
 interface InspectPostProps {
   onStartDownload: (url: string, options: any) => Promise<void>;
@@ -240,9 +239,6 @@ export const InspectPost: React.FC<InspectPostProps> = ({
 
   return (
     <div className="w-full max-w-xl mx-auto space-y-6">
-      {/* Sliding Row of Supported Platform Logos */}
-      <SupportedPlatforms />
-
       {/* Modern Search & Paste Bar */}
       <div className="space-y-3">
         <form
@@ -300,7 +296,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                 <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center text-xs font-bold text-white uppercase overflow-hidden">
                   {media.thumbnail ? (
                     <img
-                      src={media.thumbnail}
+                      src={`/api/proxy?url=${encodeURIComponent(media.thumbnail)}`}
                       alt={media.uploader}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
@@ -343,7 +339,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
           <div className="relative aspect-video bg-neutral-900 overflow-hidden group">
             {media.thumbnail ? (
               <img
-                src={media.thumbnail}
+                src={`/api/proxy?url=${encodeURIComponent(media.thumbnail)}`}
                 alt={media.title}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                 referrerPolicy="no-referrer"

@@ -1,9 +1,5 @@
+# Dependencies
 node_modules/
-dist/
-downloads/*
-!downloads/.gitkeep
-bin/yt-dlp
-.env
-.env.local
-*.tsbuildinfo
-.DS_Store
+
+# Logs
+*.log

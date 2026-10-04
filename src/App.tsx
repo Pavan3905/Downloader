@@ -7,6 +7,18 @@ import { SettingsSheet } from './components/SettingsSheet';
 import { DownloadJob, LibraryFile, SystemHealth, AdvancedSettings } from './types';
 import { Compass, Activity, Bookmark, Sliders } from 'lucide-react';
 
+const TABS: Array<{ id: 'inspect' | 'queue' | 'saved' | 'settings'; label: string; Icon: typeof Compass }> = [
+  { id: 'inspect', label: 'Explore', Icon: Compass },
+  { id: 'queue', label: 'Queue', Icon: Activity },
+  { id: 'saved', label: 'Saved', Icon: Bookmark },
+  { id: 'settings', label: 'Config', Icon: Sliders },
+];
+
+const MemoInspectPost = React.memo(InspectPost);
+const MemoQueueFeed = React.memo(QueueFeed);
+const MemoSavedLibrary = React.memo(SavedLibrary);
+const MemoSettingsSheet = React.memo(SettingsSheet);
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<'inspect' | 'queue' | 'saved' | 'settings'>('inspect');
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
@@ -121,6 +133,16 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchHealth, fetchJobs, fetchFiles]);
 
+  // Allow deep components (empty-state CTAs) to switch tabs without prop drilling
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const tab = (e as CustomEvent<string>).detail as 'inspect' | 'queue' | 'saved' | 'settings';
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener('app:navigate', onNavigate);
+    return () => window.removeEventListener('app:navigate', onNavigate);
+  }, []);
+
   // When a job completes, refresh library files
   useEffect(() => {
     const hasCompleted = jobs.some((j) => j.status === 'completed');
@@ -129,7 +151,7 @@ export default function App() {
     }
   }, [jobs, fetchFiles]);
 
-  const handleStartDownload = async (url: string, options: any) => {
+  const handleStartDownload = useCallback(async (url: string, options: any) => {
     try {
       const res = await fetch('/api/downloads', {
         method: 'POST',
@@ -149,9 +171,9 @@ export default function App() {
       showToast(err.message || 'Error queuing download');
       throw err;
     }
-  };
+  }, [fetchJobs]);
 
-  const handleCancelJob = async (jobId: string) => {
+  const handleCancelJob = useCallback(async (jobId: string) => {
     try {
       await fetch(`/api/downloads/${jobId}`, { method: 'DELETE' });
       showToast('Download cancelled');
@@ -159,9 +181,9 @@ export default function App() {
     } catch {
       showToast('Failed to cancel');
     }
-  };
+  }, [fetchJobs]);
 
-  const handleScheduleJob = async (jobId: string, scheduledFor: string | null) => {
+  const handleScheduleJob = useCallback(async (jobId: string, scheduledFor: string | null) => {
     try {
       const res = await fetch(`/api/downloads/${jobId}/schedule`, {
         method: 'POST',
@@ -178,9 +200,9 @@ export default function App() {
     } catch {
       showToast('Error scheduling download');
     }
-  };
+  }, [fetchJobs]);
 
-  const handleStartNow = async (jobId: string) => {
+  const handleStartNow = useCallback(async (jobId: string) => {
     try {
       const res = await fetch(`/api/downloads/${jobId}/start-now`, { method: 'POST' });
       if (res.ok) {
@@ -192,9 +214,9 @@ export default function App() {
     } catch {
       showToast('Error starting download');
     }
-  };
+  }, [fetchJobs]);
 
-  const handleCreateScheduledDownload = async (url: string, scheduledFor: string, options?: any) => {
+  const handleCreateScheduledDownload = useCallback(async (url: string, scheduledFor: string, options?: any) => {
     try {
       const res = await fetch('/api/downloads', {
         method: 'POST',
@@ -211,9 +233,9 @@ export default function App() {
       showToast(err.message || 'Error scheduling download');
       throw err;
     }
-  };
+  }, [fetchJobs]);
 
-  const handleDeleteFile = async (filename: string) => {
+  const handleDeleteFile = useCallback(async (filename: string) => {
     try {
       await fetch(`/api/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
       showToast('File removed from library');
@@ -221,9 +243,9 @@ export default function App() {
     } catch {
       showToast('Failed to delete file');
     }
-  };
+  }, [fetchFiles]);
 
-  const handleBulkDeleteFiles = async (filenames: string[]) => {
+  const handleBulkDeleteFiles = useCallback(async (filenames: string[]) => {
     try {
       const res = await fetch('/api/files/bulk-delete', {
         method: 'POST',
@@ -240,73 +262,56 @@ export default function App() {
     } catch {
       showToast('Error deleting files');
     }
-  };
-
-  const handleQuickPaste = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text && /^https?:\/\//i.test(text.trim())) {
-        setActiveTab('inspect');
-        showToast('Link pasted from clipboard');
-      } else {
-        showToast('Clipboard does not contain a media URL');
-      }
-    } catch {
-      showToast('Unable to read clipboard');
-    }
-  };
+  }, [fetchFiles]);
 
   const activeQueueCount = jobs.filter(
     (j) => j.status === 'queued' || j.status === 'downloading'
   ).length;
 
+  // Stable tab handlers so memoized children don't re-render every poll tick
+  const goInspectTab = useCallback(() => setActiveTab('inspect'), []);
+  const goSavedTab = useCallback(() => setActiveTab('saved'), []);
+  const goSettingsTab = useCallback(() => setActiveTab('settings'), []);
+
   return (
     <div className={`min-h-screen ${theme === 'light' ? 'light bg-neutral-50 text-neutral-900' : 'bg-black text-white'} flex flex-col font-sans selection:bg-rose-500/30 transition-colors duration-200`}>
-      {/* Top Header with Theme Switcher & Status */}
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        activeQueueCount={activeQueueCount}
-        savedCount={files.length}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onQuickPaste={handleQuickPaste}
-      />
+      {/* Minimal Top Header (brand + theme switch only) */}
+      <Header theme={theme} onToggleTheme={toggleTheme} />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 pb-24">
         {activeTab === 'inspect' && (
-          <InspectPost
+          <MemoInspectPost
             onStartDownload={handleStartDownload}
             advancedSettings={advancedSettings}
           />
         )}
 
         {activeTab === 'queue' && (
-          <QueueFeed
+          <MemoQueueFeed
             jobs={jobs}
             onCancelJob={handleCancelJob}
             onScheduleJob={handleScheduleJob}
             onStartNow={handleStartNow}
             onCreateScheduled={handleCreateScheduledDownload}
-            onNavigateToInspect={() => setActiveTab('inspect')}
-            onNavigateToSaved={() => setActiveTab('saved')}
-            onNavigateToSettings={() => setActiveTab('settings')}
+            onNavigateToInspect={goInspectTab}
+            onNavigateToSaved={goSavedTab}
+            onNavigateToSettings={goSettingsTab}
           />
         )}
 
         {activeTab === 'saved' && (
-          <SavedLibrary
+          <MemoSavedLibrary
             files={files}
             onDeleteFile={handleDeleteFile}
             onBulkDeleteFiles={handleBulkDeleteFiles}
             onRefresh={fetchFiles}
-            onNavigateToInspect={() => setActiveTab('inspect')}
+            onNavigateToInspect={goInspectTab}
           />
         )}
 
         {activeTab === 'settings' && (
-          <SettingsSheet
+          <MemoSettingsSheet
             settings={advancedSettings}
             setSettings={setAdvancedSettings}
             health={health}
@@ -316,63 +321,45 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Instagram-style Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-t border-neutral-800 shadow-2xl">
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/85 dark:bg-black/85 backdrop-blur-xl border-t border-neutral-800/70">
         <div className="grid grid-cols-4 items-center h-14 max-w-md mx-auto">
-          <button
-            onClick={() => setActiveTab('inspect')}
-            className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-              activeTab === 'inspect' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            <Compass className="w-5 h-5" />
-            <span className="text-[10px] font-medium tracking-tight">Explore</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('queue')}
-            className={`relative flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-              activeTab === 'queue' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            <Activity className="w-5 h-5" />
-            <span className="text-[10px] font-medium tracking-tight">Queue</span>
-            {activeQueueCount > 0 && (
-              <span className="absolute top-1 right-5 w-2 h-2 rounded-full instagram-gradient animate-pulse" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('saved')}
-            className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-              activeTab === 'saved' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            <Bookmark className="w-5 h-5" />
-            <span className="text-[10px] font-medium tracking-tight">Saved</span>
-            {files.length > 0 && (
-              <span className="absolute top-1 right-5 text-[9px] font-mono text-neutral-400">
-                {files.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-              activeTab === 'settings' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            <Sliders className="w-5 h-5" />
-            <span className="text-[10px] font-medium tracking-tight">Config</span>
-          </button>
+          {TABS.map(({ id, label, Icon }) => {
+            const isActive = activeTab === id;
+            const badge = id === 'queue' ? activeQueueCount : id === 'saved' ? files.length : 0;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
+                  isActive ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                <span className="text-[10px] font-medium tracking-tight">{label}</span>
+                {badge > 0 && (
+                  <span
+                    className={`absolute top-1 right-[calc(50%-16px)] rounded-full min-w-[16px] h-4 px-1 text-[9px] font-bold leading-4 text-center ${
+                      id === 'queue'
+                        ? 'instagram-gradient text-white animate-pulse'
+                        : 'bg-neutral-700 text-neutral-200'
+                    }`}
+                  >
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </nav>
 
-      {/* Aesthetic Toast Notification */}
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-18 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-neutral-900/95 border border-neutral-800 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <span className="w-1.5 h-1.5 rounded-full instagram-gradient"></span>
+        <div className="fixed bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-neutral-900/95 border border-neutral-800 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full instagram-gradient shrink-0"></span>
           <span>{toastMessage}</span>
         </div>
       )}

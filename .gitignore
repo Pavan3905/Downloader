@@ -1,13 +1,27 @@
 # Dependencies
 node_modules/
+**/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
 
 # Logs
 *.log
+npm-debug.log*
 
 # Build outputs
 dist/
+**/dist/
 *.tsbuildinfo
 
 # Downloads storage
+backend/downloads/*
+!backend/downloads/.gitkeep
 downloads/*
-!downloads/.gitkeep
+!downloads/.gitkeep
+
+# System & Editor
+.DS_Store
+Thumbs.db

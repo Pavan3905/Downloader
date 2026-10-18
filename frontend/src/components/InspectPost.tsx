@@ -22,7 +22,6 @@ import {
   SlidersHorizontal,
   ChevronDown,
   ChevronUp,
-  Layers,
   Clock,
   Calendar,
   Zap,

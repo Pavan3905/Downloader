@@ -3,3 +3,11 @@ node_modules/
 
 # Logs
 *.log
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Downloads storage
+downloads/*
+!downloads/.gitkeep

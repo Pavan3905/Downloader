@@ -314,7 +314,6 @@ export default function App() {
           <MemoSettingsSheet
             settings={advancedSettings}
             setSettings={setAdvancedSettings}
-            health={health}
             theme={theme}
             setTheme={setTheme}
           />

@@ -2,14 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   RotateCcw,
   Check,
-  Sparkles,
-  Key,
   ShieldCheck,
   Upload,
   Trash2,
-  CheckCircle2,
-  AlertTriangle,
-  ExternalLink,
   HelpCircle,
   Sun,
   Moon,
@@ -19,7 +14,6 @@ import { AdvancedSettings } from '../types';
 interface SettingsSheetProps {
   settings: AdvancedSettings;
   setSettings: React.Dispatch<React.SetStateAction<AdvancedSettings>>;
-  health?: any;
   theme?: 'dark' | 'light';
   setTheme?: (theme: 'dark' | 'light') => void;
 }
@@ -27,7 +21,6 @@ interface SettingsSheetProps {
 export const SettingsSheet: React.FC<SettingsSheetProps> = ({
   settings,
   setSettings,
-  health,
   theme = 'dark',
   setTheme,
 }) => {

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Bookmark,
   Search,
   Download,
   Trash2,
@@ -19,7 +18,6 @@ import {
   CheckSquare,
   Square,
   AlertTriangle,
-  Check,
   FolderOpen,
 } from 'lucide-react';
 import { LibraryFile } from '../types';
@@ -515,7 +513,7 @@ export const SavedLibrary: React.FC<SavedLibraryProps> = ({
             return (
               <div
                 key={file.name}
-                onClick={(e) => {
+                onClick={() => {
                   // If in selection mode or clicking on checkbox area
                   if (isSelectionMode) {
                     toggleSelectFile(file.name);

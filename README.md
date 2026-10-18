@@ -26,7 +26,6 @@ Downloader/
 │   ├── package.json          # Backend dependencies
 │   └── downloads/            # Local media file storage
 │
-├── docker-compose.yml        # All-in-one local/VPS container stack
 ├── vercel.json               # Root Vercel configuration
 └── DEPLOYMENT.md             # Complete step-by-step deployment guide
 ```

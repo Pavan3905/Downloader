@@ -5,14 +5,7 @@ import { QueueFeed } from './components/QueueFeed';
 import { SavedLibrary } from './components/SavedLibrary';
 import { SettingsSheet } from './components/SettingsSheet';
 import { DownloadJob, LibraryFile, AdvancedSettings } from './types';
-import { Compass, Activity, Bookmark, Sliders } from 'lucide-react';
-
-const TABS: Array<{ id: 'inspect' | 'queue' | 'saved' | 'settings'; label: string; Icon: typeof Compass }> = [
-  { id: 'inspect', label: 'Explore', Icon: Compass },
-  { id: 'queue', label: 'Queue', Icon: Activity },
-  { id: 'saved', label: 'Saved', Icon: Bookmark },
-  { id: 'settings', label: 'Config', Icon: Sliders },
-];
+import { Sliders, X } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
 const MemoQueueFeed = React.memo(QueueFeed);
@@ -20,10 +13,10 @@ const MemoSavedLibrary = React.memo(SavedLibrary);
 const MemoSettingsSheet = React.memo(SettingsSheet);
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'inspect' | 'queue' | 'saved' | 'settings'>('inspect');
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [files, setFiles] = useState<LibraryFile[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -121,11 +114,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchJobs, fetchFiles, jobs]);
 
-  // Allow deep components (empty-state CTAs) to switch tabs without prop drilling
+  // Deep event listeners for in-app anchor links
   useEffect(() => {
     const onNavigate = (e: Event) => {
-      const tab = (e as CustomEvent<string>).detail as 'inspect' | 'queue' | 'saved' | 'settings';
-      if (tab) setActiveTab(tab);
+      const target = (e as CustomEvent<string>).detail;
+      if (target === 'settings') {
+        setIsSettingsOpen(true);
+      } else if (target === 'queue') {
+        document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'saved') {
+        document.getElementById('library-section')?.scrollIntoView({ behavior: 'smooth' });
+      } else if (target === 'inspect') {
+        document.getElementById('downloader-section')?.scrollIntoView({ behavior: 'smooth' });
+      }
     };
     window.addEventListener('app:navigate', onNavigate);
     return () => window.removeEventListener('app:navigate', onNavigate);
@@ -154,7 +155,7 @@ export default function App() {
 
       showToast('Download added to queue!');
       await fetchJobs();
-      setActiveTab('queue');
+      document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
     } catch (err: any) {
       showToast(err.message || 'Error queuing download');
       throw err;
@@ -182,8 +183,7 @@ export default function App() {
         showToast(scheduledFor ? 'Download scheduled successfully' : 'Download queued immediately');
         await fetchJobs();
       } else {
-        const d = await res.json().catch(() => ({}));
-        showToast(d.error || 'Failed to update schedule');
+        showToast('Failed to schedule download');
       }
     } catch {
       showToast('Error scheduling download');
@@ -217,6 +217,7 @@ export default function App() {
       }
       showToast('Download scheduled with background worker!');
       await fetchJobs();
+      document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
     } catch (err: any) {
       showToast(err.message || 'Error scheduling download');
       throw err;
@@ -256,26 +257,39 @@ export default function App() {
     (j) => j.status === 'queued' || j.status === 'downloading'
   ).length;
 
-  // Stable tab handlers so memoized children don't re-render every poll tick
-  const goInspectTab = useCallback(() => setActiveTab('inspect'), []);
-  const goSavedTab = useCallback(() => setActiveTab('saved'), []);
-  const goSettingsTab = useCallback(() => setActiveTab('settings'), []);
+  const goInspectTab = useCallback(() => {
+    document.getElementById('downloader-section')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+  const goSavedTab = useCallback(() => {
+    document.getElementById('library-section')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+  const goSettingsTab = useCallback(() => {
+    setIsSettingsOpen(true);
+  }, []);
 
   return (
     <div className={`min-h-screen ${theme === 'light' ? 'light bg-neutral-50 text-neutral-900' : 'bg-black text-white'} flex flex-col font-sans selection:bg-rose-500/30 transition-colors duration-200`}>
-      {/* Minimal Top Header (brand + theme switch only) */}
-      <Header theme={theme} onToggleTheme={toggleTheme} />
+      {/* Top Header */}
+      <Header
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        activeJobsCount={activeQueueCount}
+        filesCount={files.length}
+      />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 pb-24">
-        {activeTab === 'inspect' && (
+      {/* Main Unified Single-Screen Workspace */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 space-y-12">
+        {/* 1. Downloader & Media Inspector Section */}
+        <section id="downloader-section" className="scroll-mt-20">
           <MemoInspectPost
             onStartDownload={handleStartDownload}
             advancedSettings={advancedSettings}
           />
-        )}
+        </section>
 
-        {activeTab === 'queue' && (
+        {/* 2. Download Queue & Live Progress Section */}
+        <section id="queue-section" className="scroll-mt-20">
           <MemoQueueFeed
             jobs={jobs}
             onCancelJob={handleCancelJob}
@@ -286,9 +300,10 @@ export default function App() {
             onNavigateToSaved={goSavedTab}
             onNavigateToSettings={goSettingsTab}
           />
-        )}
+        </section>
 
-        {activeTab === 'saved' && (
+        {/* 3. Downloaded Files Library Section */}
+        <section id="library-section" className="scroll-mt-20">
           <MemoSavedLibrary
             files={files}
             onDeleteFile={handleDeleteFile}
@@ -296,56 +311,47 @@ export default function App() {
             onRefresh={fetchFiles}
             onNavigateToInspect={goInspectTab}
           />
-        )}
-
-        {activeTab === 'settings' && (
-          <MemoSettingsSheet
-            settings={advancedSettings}
-            setSettings={setAdvancedSettings}
-            theme={theme}
-            setTheme={setTheme}
-          />
-        )}
+        </section>
       </main>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/85 dark:bg-black/85 backdrop-blur-xl border-t border-neutral-800/70">
-        <div className="grid grid-cols-4 items-center h-14 max-w-md mx-auto">
-          {TABS.map(({ id, label, Icon }) => {
-            const isActive = activeTab === id;
-            const badge = id === 'queue' ? activeQueueCount : id === 'saved' ? files.length : 0;
-            return (
+      {/* Settings Slide-Over Drawer Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="fixed inset-0"
+            onClick={() => setIsSettingsOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative w-full max-w-md h-full bg-neutral-950 border-l border-neutral-800 p-6 overflow-y-auto shadow-2xl z-10 flex flex-col space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-rose-400" />
+                <h2 className="text-sm font-bold text-white tracking-tight">Studio Preferences</h2>
+              </div>
               <button
-                key={id}
                 type="button"
-                onClick={() => setActiveTab(id)}
-                aria-current={isActive ? 'page' : undefined}
-                className={`relative flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-                  isActive ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
-                }`}
+                onClick={() => setIsSettingsOpen(false)}
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
+                aria-label="Close preferences"
               >
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                <span className="text-[10px] font-medium tracking-tight">{label}</span>
-                {badge > 0 && (
-                  <span
-                    className={`absolute top-1 right-[calc(50%-16px)] rounded-full min-w-[16px] h-4 px-1 text-[9px] font-bold leading-4 text-center ${
-                      id === 'queue'
-                        ? 'instagram-gradient text-white animate-pulse'
-                        : 'bg-neutral-700 text-neutral-200'
-                    }`}
-                  >
-                    {badge > 99 ? '99+' : badge}
-                  </span>
-                )}
+                <X className="w-4 h-4" />
               </button>
-            );
-          })}
+            </div>
+            <div className="flex-1">
+              <MemoSettingsSheet
+                settings={advancedSettings}
+                setSettings={setAdvancedSettings}
+                theme={theme}
+                setTheme={setTheme}
+              />
+            </div>
+          </div>
         </div>
-      </nav>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-neutral-900/95 border border-neutral-800 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 whitespace-nowrap">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-neutral-900/95 border border-neutral-800 text-white text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-150">
           <span className="w-1.5 h-1.5 rounded-full instagram-gradient shrink-0"></span>
           <span>{toastMessage}</span>
         </div>

@@ -180,9 +180,9 @@ function getFormatSelector(quality: string, isAudioOnly: boolean, container?: st
     return 'bv*[vcodec^=vp09]+ba[acodec^=opus]/bv*+ba/b/best';
   }
   if (!isNaN(height) && height > 0) {
-    return `b[height<=${height}][ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}][ext=mp4]+ba[ext=m4a]/b[height<=${height}][ext=mp4]/bv*[height<=${height}]+ba/b[height<=${height}]`;
+    return `b[height<=${height}][ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}][ext=mp4]+ba[ext=m4a]/b[height<=${height}][ext=mp4]/bv*[height<=${height}]+ba/b[height<=${height}]/bv*[width<=${height}]+ba/b[width<=${height}]/bestvideo+bestaudio/best`;
   }
-  return 'b[ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b';
+  return 'b[ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b/bestvideo+bestaudio/best';
 }
 
 function runYtDlp(args: string[], timeoutMs: number): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {

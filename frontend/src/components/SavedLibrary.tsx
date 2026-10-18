@@ -185,7 +185,7 @@ export const SavedLibrary: React.FC<SavedLibraryProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-4">
+    <div className="w-full max-w-3xl mx-auto space-y-4">
       {/* Header & Controls */}
       <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
         <div>

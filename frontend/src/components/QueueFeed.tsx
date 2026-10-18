@@ -187,7 +187,7 @@ export const QueueFeed: React.FC<QueueFeedProps> = ({
   });
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-4">
+    <div className="w-full max-w-3xl mx-auto space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800">
         <div>

@@ -243,7 +243,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-6">
+    <div className="w-full max-w-3xl mx-auto space-y-6">
       {/* Modern Search & Paste Bar */}
       <div className="space-y-3">
         <form

@@ -110,13 +110,16 @@ export default function App() {
     fetchJobs();
     fetchFiles();
 
-    // Poll jobs queue regularly for live progress
+    // Poll jobs queue regularly: 1.5s when active downloads exist, 5s when idle
+    const hasActiveJobs = jobs.some((j) => j.status === 'downloading' || j.status === 'queued');
+    const intervalTime = hasActiveJobs ? 1500 : 5000;
+
     const interval = setInterval(() => {
       fetchJobs();
-    }, 1500);
+    }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [fetchJobs, fetchFiles]);
+  }, [fetchJobs, fetchFiles, jobs]);
 
   // Allow deep components (empty-state CTAs) to switch tabs without prop drilling
   useEffect(() => {

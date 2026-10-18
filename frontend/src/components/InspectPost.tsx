@@ -148,6 +148,8 @@ export const InspectPost: React.FC<InspectPostProps> = ({
         embed_chapters: embedChapters,
         filename_template: advancedSettings.filename_template,
         retries: advancedSettings.retries,
+        fragment_retries: advancedSettings.fragment_retries,
+        concurrent_fragments: advancedSettings.concurrent_fragments,
         limit_rate: advancedSettings.limit_rate,
         proxy: advancedSettings.proxy,
       });
@@ -178,6 +180,8 @@ export const InspectPost: React.FC<InspectPostProps> = ({
         embed_chapters: embedChapters,
         filename_template: advancedSettings.filename_template,
         retries: advancedSettings.retries,
+        fragment_retries: advancedSettings.fragment_retries,
+        concurrent_fragments: advancedSettings.concurrent_fragments,
         limit_rate: advancedSettings.limit_rate,
         proxy: advancedSettings.proxy,
       });

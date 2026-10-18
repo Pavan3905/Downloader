@@ -82,9 +82,58 @@ interface DownloadJob {
   scheduled_for?: string | null;
   options: any;
   generated_files?: string[];
+  childProcess?: any;
 }
 
 const JOBS = new Map<string, DownloadJob>();
+const MAX_CONCURRENT_DOWNLOADS = parseInt(process.env.MAX_CONCURRENT_DOWNLOADS || '2', 10);
+const MAX_STORAGE_BYTES = parseInt(process.env.MAX_STORAGE_MB || '800', 10) * 1024 * 1024;
+
+function autoPruneOldFiles() {
+  try {
+    const files = fs.readdirSync(DOWNLOADS_DIR);
+    const fileEntries = files
+      .filter((name) => name !== '.gitkeep' && !name.startsWith('.'))
+      .map((name) => {
+        const filePath = path.join(DOWNLOADS_DIR, name);
+        const st = fs.statSync(filePath);
+        return { name, filePath, size: st.size, mtime: st.mtime.getTime() };
+      });
+
+    let totalBytes = fileEntries.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes <= MAX_STORAGE_BYTES) return;
+
+    fileEntries.sort((a, b) => a.mtime - b.mtime);
+    const activeFilenames = new Set(
+      Array.from(JOBS.values())
+        .filter((j) => j.status === 'downloading' && j.filename)
+        .map((j) => j.filename)
+    );
+
+    for (const f of fileEntries) {
+      if (totalBytes <= MAX_STORAGE_BYTES * 0.75) break;
+      if (activeFilenames.has(f.name)) continue;
+      try {
+        fs.unlinkSync(f.filePath);
+        totalBytes -= f.size;
+        console.log(`[Storage] Auto-pruned old file to safeguard disk space: ${f.name}`);
+      } catch {}
+    }
+  } catch {}
+}
+
+function dispatchNextJob() {
+  const activeCount = Array.from(JOBS.values()).filter((j) => j.status === 'downloading').length;
+  if (activeCount >= MAX_CONCURRENT_DOWNLOADS) return;
+
+  const queuedJobs = Array.from(JOBS.values())
+    .filter((j) => j.status === 'queued')
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  if (queuedJobs.length > 0) {
+    executeDownloadJob(queuedJobs[0]);
+  }
+}
 
 function safeJob(job: DownloadJob) {
   return {
@@ -119,11 +168,17 @@ function parseQualityHeight(quality: string): number {
   return isNaN(h) ? NaN : h;
 }
 
-function getFormatSelector(quality: string, isAudioOnly: boolean): string {
+function getFormatSelector(quality: string, isAudioOnly: boolean, container?: string): string {
   if (isAudioOnly) {
     return 'ba/b';
   }
   const height = parseQualityHeight(quality);
+  if (container === 'webm') {
+    if (!isNaN(height) && height > 0) {
+      return `bv*[height<=${height}][vcodec^=vp09]+ba[acodec^=opus]/bv*[height<=${height}]+ba/b[height<=${height}]/best`;
+    }
+    return 'bv*[vcodec^=vp09]+ba[acodec^=opus]/bv*+ba/b/best';
+  }
   if (!isNaN(height) && height > 0) {
     return `b[height<=${height}][ext=mp4][vcodec^=avc1][acodec^=mp4a]/bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}][ext=mp4]+ba[ext=m4a]/b[height<=${height}][ext=mp4]/bv*[height<=${height}]+ba/b[height<=${height}]`;
   }
@@ -375,7 +430,19 @@ async function executeDownloadJob(job: DownloadJob) {
           '--no-playlist',
           '--no-warnings',
           '--newline',
+          '--concurrent-fragments', String(opts.concurrent_fragments || 4),
+          '--retries', String(opts.retries || 10),
+          '--fragment-retries', String(opts.fragment_retries || 10),
+          '--extractor-args', 'youtube:player_client=android,web',
         ];
+
+        if (opts.limit_rate) {
+          ytdlpArgs.push('--limit-rate', String(opts.limit_rate));
+        }
+
+        if (opts.proxy) {
+          ytdlpArgs.push('--proxy', String(opts.proxy));
+        }
 
         if (fs.existsSync(COOKIES_FILE)) {
           ytdlpArgs.push('--cookies', COOKIES_FILE);
@@ -410,15 +477,16 @@ async function executeDownloadJob(job: DownloadJob) {
             ? String(opts.merge_output_format)
             : 'mp4';
           ytdlpArgs.push(
-            '-f', getFormatSelector(opts.format_id || 'best', false),
-            '--merge-output-format', mergeFmt,
-            '--postprocessor-args', 'Merger:-c:v copy -c:a aac -b:a 192k -ac 2 -movflags +faststart',
+            '-f', getFormatSelector(opts.format_id || 'best', false, mergeFmt),
+            mergeFmt === 'webm' ? '--recode-video' : '--merge-output-format',
+            mergeFmt,
             '-o', outputPath,
             job.url
           );
         }
 
         const child = spawn(YTDLP_PATH, ytdlpArgs);
+        job.childProcess = child;
 
         child.stdout.on('data', (d: Buffer) => {
           const str = d.toString();
@@ -443,17 +511,27 @@ async function executeDownloadJob(job: DownloadJob) {
         });
 
         await new Promise<void>((resolve) => {
+          let timeoutTimer: NodeJS.Timeout | null = null;
+          const cleanup = () => {
+            if (timeoutTimer) {
+              clearTimeout(timeoutTimer);
+              timeoutTimer = null;
+            }
+            job.childProcess = undefined;
+            resolve();
+          };
+
           child.on('close', async (code) => {
             if (code === 0 && fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
               downloadedDirectly = true;
             }
-            resolve();
+            cleanup();
           });
-          child.on('error', () => resolve());
-          setTimeout(() => {
-            try { child.kill(); } catch {}
-            resolve();
-          }, 300000);
+          child.on('error', () => cleanup());
+          timeoutTimer = setTimeout(() => {
+            try { child.kill('SIGKILL'); } catch {}
+            cleanup();
+          }, 600000);
         });
       } catch {}
     }
@@ -463,6 +541,7 @@ async function executeDownloadJob(job: DownloadJob) {
       job.progress = 0;
       job.speed = null;
       job.eta = null;
+      job.childProcess = undefined;
 
       if (lastStderr.includes('bot') || lastStderr.includes('Sign in')) {
         job.error = 'YouTube requires bot verification. Upload your YouTube cookies in Settings to authenticate.';
@@ -472,6 +551,8 @@ async function executeDownloadJob(job: DownloadJob) {
         const errorLine = lastStderr.split('\n').filter((l) => l.includes('ERROR:')).pop()?.replace(/^ERROR:\s*/, '');
         job.error = errorLine || 'Download failed. The media source was not accessible.';
       }
+      autoPruneOldFiles();
+      dispatchNextJob();
       return;
     }
   } catch {}
@@ -497,6 +578,10 @@ async function executeDownloadJob(job: DownloadJob) {
   job.status = 'completed';
   job.eta = 0;
   job.speed = null;
+  job.childProcess = undefined;
+
+  autoPruneOldFiles();
+  dispatchNextJob();
 }
 
 // Background scheduler loop
@@ -510,7 +595,7 @@ function startSchedulerWorker() {
         if (dueTime <= now) {
           console.log(`[Worker] Dispatching scheduled job ${job.id} ("${job.title}")`);
           job.status = 'queued';
-          executeDownloadJob(job);
+          dispatchNextJob();
         }
       }
     }
@@ -755,9 +840,9 @@ async function startServer() {
         .catch(() => {});
     }
 
-    // Start download immediately
+    // Start download via queue manager
     if (!isScheduled) {
-      executeDownloadJob(job);
+      dispatchNextJob();
     }
 
     res.status(201).json(safeJob(job));
@@ -783,7 +868,7 @@ async function startServer() {
     if (!job) return res.status(404).json({ error: 'Download job not found.' });
     job.scheduled_for = null;
     job.status = 'queued';
-    executeDownloadJob(job);
+    dispatchNextJob();
     res.json(safeJob(job));
   });
 
@@ -791,8 +876,14 @@ async function startServer() {
   app.delete('/api/downloads/:job_id', (req: Request, res: Response) => {
     const job = JOBS.get(String(req.params.job_id));
     if (!job) return res.status(404).json({ error: 'Job not found.' });
+    if (job.childProcess) {
+      try {
+        job.childProcess.kill('SIGKILL');
+      } catch {}
+    }
     job.status = 'cancelled';
     JOBS.delete(String(req.params.job_id));
+    dispatchNextJob();
     res.json({ message: 'Job removed successfully.' });
   });
 
@@ -820,7 +911,7 @@ async function startServer() {
     }
   });
 
-  // Stream / Download File with HTTP 206 Range Support
+  // Stream / Download File with HTTP 206 Range Support (Safari/iOS compatible)
   app.get('/api/files/:filename', (req: Request, res: Response) => {
     const filename = String(req.params.filename);
     const safeName = path.basename(filename);
@@ -864,9 +955,20 @@ async function startServer() {
     const range = req.headers.range;
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      if (start >= fileSize || end >= fileSize) {
+      let start: number;
+      let end: number;
+
+      if (!parts[0] && parts[1]) {
+        // Suffix range: bytes=-500 (last 500 bytes)
+        const suffixLength = parseInt(parts[1], 10);
+        start = isNaN(suffixLength) ? 0 : Math.max(0, fileSize - suffixLength);
+        end = fileSize - 1;
+      } else {
+        start = parseInt(parts[0], 10);
+        end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      }
+
+      if (isNaN(start) || isNaN(end) || start < 0 || start >= fileSize || end >= fileSize || start > end) {
         res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end();
         return;
       }

@@ -20,12 +20,33 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
 const AUTH_USER = process.env.CLIPSTREAM_USERNAME || '';
 const AUTH_PASSWORD = process.env.CLIPSTREAM_PASSWORD || '';
 const SHARE_TOKEN = process.env.CLIPSTREAM_SHARE_TOKEN || '';
-const FFMPEG_PATH = fs.existsSync('/usr/bin/ffmpeg') ? '/usr/bin/ffmpeg' : (process.env.CLIPSTREAM_FFMPEG_PATH || 'ffmpeg');
-const FFPROBE_PATH = fs.existsSync('/usr/bin/ffprobe') ? '/usr/bin/ffprobe' : (process.env.CLIPSTREAM_FFPROBE_PATH || 'ffprobe');
+function resolveBinary(name: string, customPath?: string): string {
+  if (customPath && fs.existsSync(customPath)) return customPath;
+  const standardPaths = [
+    `/usr/bin/${name}`,
+    `/usr/local/bin/${name}`,
+    path.join(ROOT, 'bin', name),
+    path.join(ROOT, 'bin', `${name}.exe`),
+  ];
+  for (const p of standardPaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  try {
+    const cmd = process.platform === 'win32' ? `where.exe ${name}` : `command -v ${name}`;
+    const out = execSync(cmd, { encoding: 'utf-8' }).trim().split('\n')[0].trim();
+    if (out && fs.existsSync(out)) return out;
+  } catch {}
+  return customPath || name;
+}
+
+const FFMPEG_PATH = resolveBinary('ffmpeg', process.env.CLIPSTREAM_FFMPEG_PATH);
+const FFPROBE_PATH = resolveBinary('ffprobe', process.env.CLIPSTREAM_FFPROBE_PATH);
 
 // Resolve yt-dlp: local bin > /tmp > /usr/local/bin > system PATH
 function resolveYtDlp(): string {
   const candidates = [
+    path.join(ROOT, 'yt-dlp'),
+    path.join(ROOT, 'yt-dlp.exe'),
     path.join(ROOT, 'bin', 'yt-dlp'),
     path.join(ROOT, 'bin', 'yt-dlp.exe'),
     '/tmp/yt-dlp',
@@ -60,7 +81,6 @@ interface DownloadJob {
   created_at: string;
   scheduled_for?: string | null;
   options: any;
-  cancelRequested?: boolean;
   generated_files?: string[];
 }
 
@@ -349,8 +369,9 @@ async function executeDownloadJob(job: DownloadJob) {
     // 2. yt-dlp extraction
     if (!downloadedDirectly && fs.existsSync(YTDLP_PATH) && /^https?:\/\//i.test(job.url)) {
       try {
+        const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
         const ytdlpArgs = [
-          '--ffmpeg-location', FFMPEG_PATH,
+          '--ffmpeg-location', ffmpegLoc,
           '--no-playlist',
           '--no-warnings',
           '--newline',
@@ -662,6 +683,7 @@ async function startServer() {
   app.post('/api/downloads', (req: Request, res: Response) => {
     const {
       url,
+      title: incomingTitle,
       scheduled_for = null,
       format_id = 'auto',
       audio_only = false,
@@ -687,10 +709,14 @@ async function startServer() {
     );
 
     const jobId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+    const jobTitle = incomingTitle && typeof incomingTitle === 'string' && incomingTitle.trim()
+      ? incomingTitle.trim()
+      : 'Media Stream';
+
     const job: DownloadJob = {
       id: jobId,
       url: url.trim(),
-      title: 'Preparing download...',
+      title: jobTitle,
       status: isScheduled ? 'scheduled' : 'queued',
       progress: 0,
       speed: null,
@@ -718,18 +744,21 @@ async function startServer() {
 
     JOBS.set(jobId, job);
 
-    inspectUrl(url.trim())
-      .then((meta) => {
-        if (meta && meta.title && meta.title !== 'Media Stream') {
-          job.title = meta.title;
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!isScheduled) {
-          executeDownloadJob(job);
-        }
-      });
+    // If title was not provided, fetch metadata non-blockingly in the background
+    if (jobTitle === 'Media Stream') {
+      inspectUrl(url.trim())
+        .then((meta) => {
+          if (meta && meta.title && meta.title !== 'Media Stream') {
+            job.title = meta.title;
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Start download immediately
+    if (!isScheduled) {
+      executeDownloadJob(job);
+    }
 
     res.status(201).json(safeJob(job));
   });

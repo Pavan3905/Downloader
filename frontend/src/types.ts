@@ -76,16 +76,6 @@ export interface LibraryFile {
   type?: 'video' | 'audio' | 'subtitle' | 'thumbnail' | 'metadata' | 'other';
 }
 
-export interface SystemHealth {
-  ok: boolean;
-  app_version: string;
-  version: string;
-  ffmpeg: boolean;
-  ffprobe: boolean;
-  js_runtime: string;
-  has_cookies?: boolean;
-  active: number;
-}
 
 export interface AdvancedSettings {
   subtitle_mode: 'off' | 'separate' | 'embed' | 'both';

@@ -4,7 +4,7 @@ import { InspectPost } from './components/InspectPost';
 import { QueueFeed } from './components/QueueFeed';
 import { SavedLibrary } from './components/SavedLibrary';
 import { SettingsSheet } from './components/SettingsSheet';
-import { DownloadJob, LibraryFile, SystemHealth, AdvancedSettings } from './types';
+import { DownloadJob, LibraryFile, AdvancedSettings } from './types';
 import { Compass, Activity, Bookmark, Sliders } from 'lucide-react';
 
 const TABS: Array<{ id: 'inspect' | 'queue' | 'saved' | 'settings'; label: string; Icon: typeof Compass }> = [
@@ -23,7 +23,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'inspect' | 'queue' | 'saved' | 'settings'>('inspect');
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [files, setFiles] = useState<LibraryFile[]>([]);
-  const [health, setHealth] = useState<SystemHealth | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Theme state: 'dark' | 'light'
@@ -81,19 +80,6 @@ export default function App() {
     }, 3000);
   };
 
-  // Fetch health
-  const fetchHealth = useCallback(async () => {
-    try {
-      const res = await fetch('/api/health');
-      if (res.ok) {
-        const data = await res.json();
-        setHealth(data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
   // Fetch downloads queue
   const fetchJobs = useCallback(async () => {
     try {
@@ -121,7 +107,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    fetchHealth();
     fetchJobs();
     fetchFiles();
 
@@ -131,7 +116,7 @@ export default function App() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [fetchHealth, fetchJobs, fetchFiles]);
+  }, [fetchJobs, fetchFiles]);
 
   // Allow deep components (empty-state CTAs) to switch tabs without prop drilling
   useEffect(() => {

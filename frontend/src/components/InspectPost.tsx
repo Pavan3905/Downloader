@@ -134,6 +134,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
 
     try {
       await onStartDownload(media.webpage_url, {
+        title: media.title,
         format_id: mode === 'audio' ? 'best' : quality,
         audio_only: mode === 'audio',
         audio_format: audioFormat,
@@ -162,6 +163,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
     try {
       const targetDate = calculateTargetTime(schedulePreset, customScheduleTime);
       await onStartDownload(media.webpage_url, {
+        title: media.title,
         scheduled_for: targetDate.toISOString(),
         format_id: mode === 'audio' ? 'best' : quality,
         audio_only: mode === 'audio',

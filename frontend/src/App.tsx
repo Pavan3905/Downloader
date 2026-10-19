@@ -318,29 +318,16 @@ export default function App() {
               </svg>
             </button>
 
-            {/* Pill Badge: ⚡ Fast • Simple • Free */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 shadow-xs mb-3.5 select-none">
-              <Zap className="w-3.5 h-3.5 text-violet-500 fill-violet-500" />
-              <span className="text-xs font-medium text-slate-600 dark:text-zinc-300">
-                Fast &bull; Simple &bull; Free
-              </span>
-            </div>
-
             {/* Headline: Download Videos / from Anywhere */}
-            <h1 className="text-3xl sm:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight text-center leading-[1.15] select-none">
-              <div className="text-slate-900 dark:text-white">Download Videos</div>
-              <div className="mt-1">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight text-center leading-[1.15] select-none py-3">
+              <div className="text-slate-900 dark:text-white drop-shadow-xs">Download Videos</div>
+              <div className="mt-1.5">
                 <span className="text-[#8B5CF6]">from </span>
                 <span className="bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] bg-clip-text text-transparent">
                   Anywhere
                 </span>
               </div>
             </h1>
-
-            {/* Subtitle */}
-            <p className="mt-3 text-slate-500 dark:text-zinc-400 text-xs sm:text-sm md:text-base font-normal text-center max-w-md mx-auto leading-relaxed">
-              Save videos from YouTube, Instagram, TikTok and more in just a few clicks.
-            </p>
           </div>
 
           {/* Downloader Core Section (Elevated Rounded-3xl Card) */}

@@ -1,20 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
-import { QueueFeed } from './components/QueueFeed';
-import { SavedLibrary } from './components/SavedLibrary';
 import { SettingsSheet } from './components/SettingsSheet';
-import { DownloadJob, LibraryFile, AdvancedSettings } from './types';
+import { AdvancedSettings } from './types';
 import { Sliders, X } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
-const MemoQueueFeed = React.memo(QueueFeed);
-const MemoSavedLibrary = React.memo(SavedLibrary);
 const MemoSettingsSheet = React.memo(SettingsSheet);
 
 export default function App() {
-  const [jobs, setJobs] = useState<DownloadJob[]>([]);
-  const [files, setFiles] = useState<LibraryFile[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -73,83 +67,6 @@ export default function App() {
     }, 3000);
   };
 
-  // Fetch downloads queue
-  const fetchJobs = useCallback(async () => {
-    try {
-      const res = await fetch('/api/downloads');
-      if (res.ok) {
-        const data = await res.json();
-        setJobs(data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  // Fetch library files
-  const fetchFiles = useCallback(async () => {
-    try {
-      const res = await fetch('/api/files');
-      if (res.ok) {
-        const data = await res.json();
-        setFiles(data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const autoSaveJobIdsRef = React.useRef<Set<string>>(new Set());
-  const triggeredDownloadsRef = React.useRef<Set<string>>(new Set());
-
-  // Function to trigger direct device download
-  const triggerDeviceDownload = useCallback((filename: string) => {
-    try {
-      const link = document.createElement('a');
-      link.href = `/api/files/${encodeURIComponent(filename)}?download=1`;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        if (link.parentNode) {
-          link.parentNode.removeChild(link);
-        }
-      }, 500);
-    } catch {}
-  }, []);
-
-  // Poll jobs queue: 500ms when active downloads exist for real-time progress & instant device download, 4s when idle
-  useEffect(() => {
-    fetchJobs();
-    fetchFiles();
-
-    const hasActiveJobs = jobs.some((j) => j.status === 'downloading' || j.status === 'queued');
-    const intervalTime = hasActiveJobs ? 500 : 4000;
-
-    const interval = setInterval(() => {
-      fetchJobs();
-    }, intervalTime);
-
-    return () => clearInterval(interval);
-  }, [fetchJobs, fetchFiles, jobs]);
-
-  // When jobs update, auto-download completed files to the user's device immediately
-  useEffect(() => {
-    for (const job of jobs) {
-      if (
-        job.status === 'completed' &&
-        job.filename &&
-        autoSaveJobIdsRef.current.has(job.id) &&
-        !triggeredDownloadsRef.current.has(job.id)
-      ) {
-        triggeredDownloadsRef.current.add(job.id);
-        autoSaveJobIdsRef.current.delete(job.id);
-        triggerDeviceDownload(job.filename);
-        showToast(`Downloading "${job.filename}" to your device!`);
-      }
-    }
-  }, [jobs, triggerDeviceDownload]);
-
   // Toast notification event listener
   useEffect(() => {
     const onToast = (e: Event) => {
@@ -163,7 +80,6 @@ export default function App() {
   // Global Keyboard Paste (Ctrl+V / Cmd+V Anywhere on the page)
   useEffect(() => {
     const handleGlobalPaste = (e: ClipboardEvent) => {
-      // Don't intercept if user is purposefully typing inside settings inputs or another text area
       const active = document.activeElement;
       const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
       const isMainUrlInput = active && active.getAttribute('type') === 'url';
@@ -210,208 +126,23 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Deep event listeners for in-app anchor links
-  useEffect(() => {
-    const onNavigate = (e: Event) => {
-      const target = (e as CustomEvent<string>).detail;
-      if (target === 'settings') {
-        setIsSettingsOpen(true);
-      } else if (target === 'queue') {
-        document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
-      } else if (target === 'saved') {
-        document.getElementById('library-section')?.scrollIntoView({ behavior: 'smooth' });
-      } else if (target === 'inspect') {
-        document.getElementById('downloader-section')?.scrollIntoView({ behavior: 'smooth' });
-      }
-    };
-    window.addEventListener('app:navigate', onNavigate);
-    return () => window.removeEventListener('app:navigate', onNavigate);
-  }, []);
-
-  // When a job completes, refresh library files
-  useEffect(() => {
-    const hasCompleted = jobs.some((j) => j.status === 'completed');
-    if (hasCompleted) {
-      fetchFiles();
-    }
-  }, [jobs, fetchFiles]);
-
-  const handleStartDownload = useCallback(async (url: string, options: any) => {
-    try {
-      const res = await fetch('/api/downloads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, ...options }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to start download.');
-      }
-
-      const createdJob = await res.json().catch(() => null);
-      if (createdJob && createdJob.id) {
-        autoSaveJobIdsRef.current.add(createdJob.id);
-      }
-
-      showToast('Download started! File will save to your device immediately.');
-      await fetchJobs();
-      document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
-    } catch (err: any) {
-      showToast(err.message || 'Error queuing download');
-      throw err;
-    }
-  }, [fetchJobs]);
-
-  const handleCancelJob = useCallback(async (jobId: string) => {
-    try {
-      await fetch(`/api/downloads/${jobId}`, { method: 'DELETE' });
-      showToast('Download cancelled');
-      await fetchJobs();
-    } catch {
-      showToast('Failed to cancel');
-    }
-  }, [fetchJobs]);
-
-  const handleScheduleJob = useCallback(async (jobId: string, scheduledFor: string | null) => {
-    try {
-      const res = await fetch(`/api/downloads/${jobId}/schedule`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduled_for: scheduledFor }),
-      });
-      if (res.ok) {
-        showToast(scheduledFor ? 'Download scheduled successfully' : 'Download queued immediately');
-        await fetchJobs();
-      } else {
-        showToast('Failed to schedule download');
-      }
-    } catch {
-      showToast('Error scheduling download');
-    }
-  }, [fetchJobs]);
-
-  const handleStartNow = useCallback(async (jobId: string) => {
-    try {
-      const res = await fetch(`/api/downloads/${jobId}/start-now`, { method: 'POST' });
-      if (res.ok) {
-        showToast('Download started immediately');
-        await fetchJobs();
-      } else {
-        showToast('Failed to start download');
-      }
-    } catch {
-      showToast('Error starting download');
-    }
-  }, [fetchJobs]);
-
-  const handleCreateScheduledDownload = useCallback(async (url: string, scheduledFor: string, options?: any) => {
-    try {
-      const res = await fetch('/api/downloads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, scheduled_for: scheduledFor, ...options }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to schedule download.');
-      }
-      showToast('Download scheduled with background worker!');
-      await fetchJobs();
-      document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
-    } catch (err: any) {
-      showToast(err.message || 'Error scheduling download');
-      throw err;
-    }
-  }, [fetchJobs]);
-
-  const handleDeleteFile = useCallback(async (filename: string) => {
-    try {
-      await fetch(`/api/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
-      showToast('File removed from library');
-      await fetchFiles();
-    } catch {
-      showToast('Failed to delete file');
-    }
-  }, [fetchFiles]);
-
-  const handleBulkDeleteFiles = useCallback(async (filenames: string[]) => {
-    try {
-      const res = await fetch('/api/files/bulk-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filenames }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        showToast(`${data.count || filenames.length} files removed from library`);
-        await fetchFiles();
-      } else {
-        showToast('Failed to delete files in bulk');
-      }
-    } catch {
-      showToast('Error deleting files');
-    }
-  }, [fetchFiles]);
-
-  const activeQueueCount = jobs.filter(
-    (j) => j.status === 'queued' || j.status === 'downloading'
-  ).length;
-
-  const goInspectTab = useCallback(() => {
-    document.getElementById('downloader-section')?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-  const goSavedTab = useCallback(() => {
-    document.getElementById('library-section')?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-  const goSettingsTab = useCallback(() => {
-    setIsSettingsOpen(true);
-  }, []);
-
   return (
-    <div className={`min-h-screen ${theme === 'light' ? 'light bg-zinc-50 text-zinc-900' : 'bg-black text-zinc-100'} flex flex-col font-sans selection:bg-zinc-700/30 transition-colors duration-200`}>
+    <div
+      className={`min-h-screen ${
+        theme === 'light' ? 'light bg-zinc-50 text-zinc-900' : 'bg-black text-zinc-100'
+      } flex flex-col font-sans selection:bg-zinc-700/30 transition-colors duration-200`}
+    >
       {/* Top Header */}
       <Header
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        activeJobsCount={activeQueueCount}
-        filesCount={files.length}
       />
 
-      {/* Main Unified Single-Screen Workspace */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-8 space-y-10">
-        {/* 1. Downloader & Media Inspector Section */}
-        <section id="downloader-section" className="scroll-mt-20">
-          <MemoInspectPost
-            onStartDownload={handleStartDownload}
-            advancedSettings={advancedSettings}
-          />
-        </section>
-
-        {/* 2. Download Queue & Live Progress Section */}
-        <section id="queue-section" className="scroll-mt-20">
-          <MemoQueueFeed
-            jobs={jobs}
-            onCancelJob={handleCancelJob}
-            onScheduleJob={handleScheduleJob}
-            onStartNow={handleStartNow}
-            onCreateScheduled={handleCreateScheduledDownload}
-            onNavigateToInspect={goInspectTab}
-            onNavigateToSaved={goSavedTab}
-            onNavigateToSettings={goSettingsTab}
-          />
-        </section>
-
-        {/* 3. Downloaded Files Library Section */}
-        <section id="library-section" className="scroll-mt-20">
-          <MemoSavedLibrary
-            files={files}
-            onDeleteFile={handleDeleteFile}
-            onBulkDeleteFiles={handleBulkDeleteFiles}
-            onRefresh={fetchFiles}
-            onNavigateToInspect={goInspectTab}
-          />
+      {/* Main Minimalist Workspace */}
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
+        <section id="downloader-section">
+          <MemoInspectPost advancedSettings={advancedSettings} />
         </section>
       </main>
 

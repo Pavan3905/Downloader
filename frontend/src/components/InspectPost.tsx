@@ -22,14 +22,11 @@ import {
 import { MediaInfo, AdvancedSettings } from '../types';
 
 interface InspectPostProps {
-  onStartDownload: (url: string, options: any) => Promise<void>;
-  advancedSettings: AdvancedSettings;
+  onStartDownload?: (url: string, options: any) => Promise<void>;
+  advancedSettings?: AdvancedSettings;
 }
 
-export const InspectPost: React.FC<InspectPostProps> = ({
-  onStartDownload,
-  advancedSettings,
-}) => {
+export const InspectPost: React.FC<InspectPostProps> = () => {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -266,41 +263,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
     }
   };
 
-  const handleQueueDownload = async () => {
-    const targetUrl = media ? media.webpage_url : url.trim();
-    if (!targetUrl) return;
 
-    setDownloading(true);
-    setError(null);
-    try {
-      await onStartDownload(targetUrl, {
-        title: media?.title || undefined,
-        format_id: mode === 'audio' ? 'best' : quality,
-        audio_only: mode === 'audio',
-        audio_format: audioFormat,
-        quality: '320',
-        merge_output_format: container,
-        filename_template: advancedSettings.filename_template,
-        retries: advancedSettings.retries,
-        fragment_retries: advancedSettings.fragment_retries,
-        concurrent_fragments: advancedSettings.concurrent_fragments,
-        limit_rate: advancedSettings.limit_rate,
-        proxy: advancedSettings.proxy,
-        clip_start: clipStart.trim() || undefined,
-        clip_end: clipEnd.trim() || undefined,
-      });
-
-      window.dispatchEvent(
-        new CustomEvent('app:toast', {
-          detail: `Queued "${media?.title || 'Media'}" to library`,
-        })
-      );
-    } catch (err: any) {
-      setError(err.message || 'Failed to queue download.');
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   const formatDuration = (seconds?: number | null) => {
     if (!seconds) return '0:00';
@@ -810,7 +773,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
 
           {/* Collapsible Format & Advanced Options */}
           {showOptions && (
-            <div className="pt-2 border-t border-zinc-800/40 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-in fade-in duration-150">
+            <div className="pt-2 border-t border-zinc-800/40 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs animate-in fade-in duration-150">
               <div>
                 <label className="text-[11px] text-zinc-500 block mb-1">Container</label>
                 <select
@@ -836,24 +799,6 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                   <ExternalLink className="w-3 h-3 shrink-0" />
                   <span className="truncate">Open Origin</span>
                 </a>
-              </div>
-
-              <div>
-                <label className="text-[11px] text-zinc-500 block mb-1">Background Queue</label>
-                <button
-                  type="button"
-                  onClick={handleQueueDownload}
-                  disabled={downloading}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer w-full disabled:opacity-50"
-                  title="Download in background to server library"
-                >
-                  {downloading ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Download className="w-3 h-3 text-sky-400" />
-                  )}
-                  <span className="truncate">Save to Server</span>
-                </button>
               </div>
 
               {/* Video Section Clipper / Trimmer */}

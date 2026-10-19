@@ -253,33 +253,33 @@ export default function App() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
         <div
-          className="text-center pt-2 pb-2 select-none flex items-center justify-center w-full overflow-hidden"
+          className="text-center pt-2 pb-2 select-none flex items-center justify-center w-full px-2"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <h1 className="hero-headline text-[clamp(1.25rem,4.4vw,2.85rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
-            {/* Base Prefix Text */}
-            <span className="text-white drop-shadow-[0_2px_12px_rgba(255,255,255,0.08)] shrink-0">
+          <h1 className="hero-headline text-[clamp(1rem,3.2vw,2rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
+            {/* 100% Static Prefix Text (Never Shifts or Re-mounts) */}
+            <span className="text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none">
               Download Any Video from&nbsp;
             </span>
 
-            {/* Dynamic Platform Word with Smooth Vertical Masked Slide Transition */}
+            {/* Dynamic Platform Rotator in a Fixed-Width Slot (Prefix Never Moves) */}
             <span
-              className="relative inline-flex items-center justify-start platform-rotator-mask cursor-pointer group h-[1.35em] shrink-0"
+              className="relative inline-block text-left w-[11.5ch] platform-rotator-mask cursor-pointer group h-[1.35em] align-baseline shrink-0"
               onClick={nextPlatform}
               title="Click to cycle platform"
               aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
             >
               {/* Dynamic Hue Ambient Backlight */}
               <span
-                className="absolute -inset-x-8 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
+                className="absolute -inset-x-4 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
                 style={{ background: currentPlatform.glow }}
               />
 
               {/* Outgoing Platform (Slide Out) */}
               {prevPlatformIdx !== null && (
                 <span
-                  className={`absolute inset-0 flex items-center font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
+                  className={`absolute inset-0 flex items-center justify-start font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
                 >
                   {ROTATING_PLATFORMS[prevPlatformIdx].name}
                 </span>
@@ -287,7 +287,7 @@ export default function App() {
 
               {/* Active Platform (Slide In) */}
               <span
-                className={`${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-flex items-center ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
+                className={`absolute inset-0 flex items-center justify-start ${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
               >
                 {currentPlatform.name}
               </span>

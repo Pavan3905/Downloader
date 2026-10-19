@@ -10,6 +10,16 @@ import { spawn, execSync } from 'child_process';
 const require = createRequire(import.meta.url);
 const archiver = require('archiver');
 
+function createZipArchive(options: any = { zlib: { level: 1 } }) {
+  if (archiver && archiver.ZipArchive) {
+    return new archiver.ZipArchive(options);
+  }
+  if (typeof archiver === 'function') {
+    return (archiver as any)('zip', options);
+  }
+  return new (archiver.Archiver || archiver)('zip', options);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -1134,7 +1144,7 @@ async function startServer() {
     res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
     res.setHeader('Content-Type', 'application/zip');
 
-    const archive = archiver('zip', { zlib: { level: 1 } });
+    const archive = createZipArchive({ zlib: { level: 1 } });
     archive.on('error', (err: any) => {
       console.error('[Archive Error]', err);
       if (!res.headersSent) res.status(500).send('Archive failed');

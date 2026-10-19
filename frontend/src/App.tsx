@@ -250,29 +250,29 @@ export default function App() {
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight flex flex-col items-center justify-center">
-            {/* Top Line */}
-            <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-              Download Any Video from
+          <h1 className="text-[clamp(1.15rem,4.4vw,2.75rem)] font-black tracking-tight leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
+            {/* Base Prefix Text */}
+            <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent shrink-0">
+              Download Any Video from&nbsp;
             </span>
 
-            {/* Bottom Dynamic Platform with Smooth Rolling Transition & Glow */}
-            <div
-              className="relative inline-flex items-center justify-center h-[1.35em] min-w-[220px] sm:min-w-[340px] overflow-hidden cursor-pointer group mt-0.5"
+            {/* Dynamic Platform Word with Smooth Vertical Roll Transition & Hue Glow */}
+            <span
+              className="relative inline-flex items-center justify-start overflow-hidden cursor-pointer group h-[1.3em] shrink-0"
               onClick={nextPlatform}
-              title="Click to cycle to next platform"
+              title="Click to cycle platform"
               aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
             >
               {/* Dynamic Hue Ambient Backlight */}
-              <div
-                className="absolute -inset-x-12 -inset-y-4 rounded-full blur-3xl opacity-35 pointer-events-none transition-all duration-700 ease-out"
+              <span
+                className="absolute -inset-x-8 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
                 style={{ background: currentPlatform.glow }}
               />
 
               {/* Outgoing Platform (Roll Out) */}
               {prevPlatformIdx !== null && (
                 <span
-                  className={`absolute inset-0 flex items-center justify-center font-black tracking-tight bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-roll-out drop-shadow-sm`}
+                  className={`absolute inset-0 flex items-center font-black tracking-tight bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-roll-out drop-shadow-sm whitespace-nowrap`}
                 >
                   {ROTATING_PLATFORMS[prevPlatformIdx].name}
                 </span>
@@ -280,11 +280,11 @@ export default function App() {
 
               {/* Active Platform (Roll In) */}
               <span
-                className={`${prevPlatformIdx !== null ? 'platform-roll-in' : ''} font-black tracking-tight bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-flex items-center justify-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200`}
+                className={`${prevPlatformIdx !== null ? 'platform-roll-in' : ''} font-black tracking-tight bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-flex items-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
               >
                 {currentPlatform.name}
               </span>
-            </div>
+            </span>
           </h1>
 
           {/* Interactive Capability Pill & Try Sample */}

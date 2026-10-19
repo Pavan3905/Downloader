@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
 import { SettingsSheet } from './components/SettingsSheet';
 import { AdvancedSettings } from './types';
-import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles } from 'lucide-react';
+import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles, ArrowDownToLine, ArrowUp } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
@@ -342,12 +342,51 @@ export default function App() {
             </p>
           </div>
         </div>
-
-        {/* Minimal Footer */}
-        <footer className="text-center pt-4 pb-2 text-[11px] text-zinc-600">
-          <span>Downloader · Ultra-fast, direct stream, zero server limits.</span>
-        </footer>
       </main>
+
+      {/* Aesthetic Minimal Footer */}
+      <footer className="w-full border-t border-white/[0.06] mt-auto py-7 px-4 sm:px-6 select-none z-10 transition-colors">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+          {/* Left: Brand & Engine Live Dot */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-md bg-zinc-900 border border-white/10 flex items-center justify-center text-emerald-400">
+              <ArrowDownToLine className="w-3 h-3 stroke-[2.2]" />
+            </div>
+            <span className="font-semibold text-zinc-300 tracking-tight">Downloader</span>
+            <span className="text-zinc-700">·</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <span>Edge Bypass Active</span>
+            </div>
+          </div>
+
+          {/* Right: Minimalist Controls & Back To Top */}
+          <div className="flex items-center gap-3.5 text-[11px] text-zinc-400">
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="hover:text-zinc-200 transition-colors cursor-pointer"
+            >
+              Preferences
+            </button>
+            <span className="text-zinc-700">·</span>
+            <span className="text-zinc-500">Private & Client-Side</span>
+            <span className="text-zinc-700">·</span>
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1 group"
+              title="Scroll back to top"
+            >
+              <span>Back to top</span>
+              <ArrowUp className="w-3 h-3 group-hover:-translate-y-0.5 transition-transform" />
+            </button>
+          </div>
+        </div>
+      </footer>
 
       {/* Settings Slide-Over Drawer Modal */}
       {isSettingsOpen && (

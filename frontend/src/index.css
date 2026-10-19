@@ -224,6 +224,18 @@ html.light body,
   text-shadow: none !important;
 }
 
+.light footer {
+  border-top-color: rgba(0, 0, 0, 0.06) !important;
+}
+.light footer span.text-zinc-300 {
+  color: #18181b !important;
+}
+.light footer div.bg-zinc-900 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #059669 !important;
+}
+
 .light .bg-zinc-950 {
   background-color: #ffffff !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);

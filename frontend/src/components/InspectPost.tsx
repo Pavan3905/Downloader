@@ -26,6 +26,8 @@ import {
   RefreshCw,
   Search,
   Globe,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { MediaInfo, AdvancedSettings } from '../types';
 
@@ -53,6 +55,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   const [showOptions, setShowOptions] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [matrixTab, setMatrixTab] = useState<'audio' | 'video'>('audio');
+  const [matrixViewMode, setMatrixViewMode] = useState<'grid' | 'list'>('grid');
   const [audioCategoryFilter, setAudioCategoryFilter] = useState<'all' | 'mp3' | 'm4a' | 'lossless' | 'source'>('all');
   const [pasted, setPasted] = useState(false);
 
@@ -1321,28 +1324,28 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
             </div>
           )}
 
-          {/* Proper Format Matrix Table */}
+          {/* Proper Representation: Modern, Unique & Handy Format Hub */}
           {showMatrix && (
-            <div className="p-3.5 sm:p-4 bg-slate-50/90 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-800 rounded-2xl space-y-3 animate-in fade-in duration-150 shadow-lg backdrop-blur-md">
-              {/* Table Top Navigation: Mode Switcher Tabs + Audio Filters */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-slate-200 dark:border-zinc-800/70">
+            <div className="p-3.5 sm:p-5 bg-slate-50/90 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-4 animate-in fade-in duration-150 shadow-xl backdrop-blur-md">
+              {/* Header: Mode Switcher Tabs + Audio Filters + View Toggle */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-zinc-800/80">
                 {/* Audio vs Video Tab Switcher */}
-                <div className="flex items-center p-0.5 bg-slate-200/80 dark:bg-zinc-900 border border-slate-300/80 dark:border-zinc-800 rounded-xl text-xs font-semibold">
+                <div className="flex items-center p-1 bg-slate-200/80 dark:bg-zinc-900 border border-slate-300/80 dark:border-zinc-800 rounded-2xl text-xs font-semibold">
                   <button
                     type="button"
                     onClick={() => {
                       setMatrixTab('audio');
                       setMode('audio');
                     }}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
                       matrixTab === 'audio'
-                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 shadow-xs'
-                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
+                        ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                     }`}
                   >
-                    <Music className="w-3.5 h-3.5 text-amber-500" />
+                    <Music className="w-3.5 h-3.5" />
                     <span>Audio Formats</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[10px] font-mono">
+                    <span className="px-1.5 py-0.2 rounded-full bg-black/15 text-zinc-950 text-[10px] font-mono font-bold">
                       {distinctAudioFormats.length}
                     </span>
                   </button>
@@ -1353,234 +1356,411 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                       setMatrixTab('video');
                       setMode('video');
                     }}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
                       matrixTab === 'video'
-                        ? 'bg-sky-500/15 text-sky-600 dark:text-sky-300 border border-sky-500/30 shadow-xs'
-                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
+                        ? 'bg-sky-500 text-white font-bold shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                     }`}
                   >
-                    <Video className="w-3.5 h-3.5 text-sky-500" />
+                    <Video className="w-3.5 h-3.5" />
                     <span>Video Streams</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-300 text-[10px] font-mono">
+                    <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-white text-[10px] font-mono font-bold">
                       {distinctVideoFormats.length}
                     </span>
                   </button>
                 </div>
 
-                {/* Audio Category Filters (when in Audio tab) */}
-                {matrixTab === 'audio' && (
-                  <div className="flex flex-wrap items-center gap-1 text-[11px]">
-                    {[
-                      { id: 'all', label: 'All Formats' },
-                      { id: 'mp3', label: 'MP3' },
-                      { id: 'm4a', label: 'M4A (AAC)' },
-                      { id: 'lossless', label: 'Lossless (FLAC/WAV)' },
-                      { id: 'source', label: 'Source Streams' },
-                    ].map((f) => (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => setAudioCategoryFilter(f.id as any)}
-                        className={`px-2 py-0.5 rounded-md font-medium transition-all cursor-pointer ${
-                          audioCategoryFilter === f.id
-                            ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-300 dark:border-zinc-700 font-semibold shadow-xs'
-                            : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
+                {/* Right Area: Filters & View Switcher (Grid / List) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Audio Category Filters */}
+                  {matrixTab === 'audio' && (
+                    <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                      {[
+                        { id: 'all', label: 'All Formats' },
+                        { id: 'mp3', label: 'MP3' },
+                        { id: 'm4a', label: 'M4A (AAC)' },
+                        { id: 'lossless', label: 'Lossless (FLAC/WAV)' },
+                        { id: 'source', label: 'Source Streams' },
+                      ].map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setAudioCategoryFilter(f.id as any)}
+                          className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                            audioCategoryFilter === f.id
+                              ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-300 dark:border-zinc-700 font-semibold shadow-xs'
+                              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 bg-transparent'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Grid / List View Mode Toggle */}
+                  <div className="flex items-center p-0.5 bg-slate-200/80 dark:bg-zinc-900 border border-slate-300/80 dark:border-zinc-800 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setMatrixViewMode('grid')}
+                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                        matrixViewMode === 'grid'
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs'
+                          : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                      title="Cards Grid View"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMatrixViewMode('list')}
+                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                        matrixViewMode === 'list'
+                          ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs'
+                          : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                      title="Compact List View"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Matrix Table Body */}
+              {/* Matrix Content Body: Unique, Simple & Handy Card Grid / List Deck */}
               {matrixTab === 'audio' ? (
-                /* PROPER AUDIO FORMATS TABLE */
-                <div className="space-y-2">
-                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-inner">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-zinc-800/90 bg-slate-100/90 dark:bg-zinc-900/60 text-slate-700 dark:text-zinc-400 font-semibold text-[11px] uppercase tracking-wider">
-                          <th className="py-2.5 px-3">Format</th>
-                          <th className="py-2.5 px-3">Bitrate / Quality</th>
-                          <th className="py-2.5 px-3 hidden sm:table-cell">Codec Specs & Channel</th>
-                          <th className="py-2.5 px-3">Est. File Size</th>
-                          <th className="py-2.5 px-3 text-right">Instant Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/40">
-                        {filteredAudioFormats.map((af) => {
-                          const isSelected =
-                            mode === 'audio' &&
-                            audioFormat === af.ext &&
-                            (quality === af.qualityArg ||
-                              (af.ext === 'mp3' && (quality === 'best' || quality === 'auto') && af.qualityArg === '320k'));
+                <div className="space-y-3">
+                  {/* Audio Cards Grid View */}
+                  {matrixViewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredAudioFormats.map((af) => {
+                        const isSelected =
+                          mode === 'audio' &&
+                          audioFormat === af.ext &&
+                          (quality === af.qualityArg ||
+                            (af.ext === 'mp3' && (quality === 'best' || quality === 'auto') && af.qualityArg === '320k'));
 
-                          return (
-                            <tr
-                              key={af.id}
-                              className={`transition-colors group ${
-                                isSelected
-                                  ? 'bg-amber-500/10 border-l-2 border-l-amber-500'
-                                  : 'hover:bg-slate-50 dark:hover:bg-zinc-900/50'
-                              }`}
-                            >
-                              {/* Format Container */}
-                              <td className="py-2.5 px-3 whitespace-nowrap">
+                        return (
+                          <div
+                            key={af.id}
+                            onClick={() => {
+                              setMode('audio');
+                              setAudioFormat(af.ext);
+                              setQuality(af.qualityArg);
+                              window.dispatchEvent(
+                                new CustomEvent('app:toast', {
+                                  detail: `Selected: ${af.format} (${af.bitrate})`,
+                                })
+                              );
+                            }}
+                            className={`group relative p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                              isSelected
+                                ? 'bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border-amber-500/60 dark:border-amber-500/60 shadow-md ring-1 ring-amber-500/40'
+                                : 'bg-white dark:bg-zinc-900/60 hover:bg-slate-50 dark:hover:bg-zinc-900 border-slate-200/90 dark:border-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-700 shadow-xs'
+                            }`}
+                          >
+                            {/* Card Top: Format Badge + Rec Tag + Size Chip */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`px-2.5 py-0.5 rounded-lg border text-xs font-bold tracking-wide ${af.badgeStyle}`}>
+                                  {af.format}
+                                </span>
+                                {af.recommended && (
+                                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                    ★ Recommended
+                                  </span>
+                                )}
+                              </div>
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 font-mono text-[11px] font-medium text-slate-700 dark:text-zinc-300 shrink-0">
+                                {af.approxSize}
+                              </span>
+                            </div>
+
+                            {/* Card Middle: Bitrate & Fidelity */}
+                            <div className="space-y-0.5">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <div className="text-base font-bold text-slate-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                  {af.bitrate}
+                                </div>
+                                <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium truncate">
+                                  {af.fidelityBadge}
+                                </span>
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                                {af.qualityLabel}
+                              </div>
+                            </div>
+
+                            {/* Card Bottom: Direct Action Row */}
+                            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/60 flex items-center justify-between gap-2">
+                              <span className={`text-[11px] font-medium transition-colors ${isSelected ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-slate-400 dark:text-zinc-500'}`}>
+                                {isSelected ? '✓ Active Selection' : 'Click to select'}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(true, af.qualityArg, af.ext);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-sm shrink-0"
+                                title={`Download ${af.format} (${af.bitrate})`}
+                              >
+                                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Get {af.format}</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Audio Streamlined List View */
+                    <div className="space-y-2">
+                      {filteredAudioFormats.map((af) => {
+                        const isSelected =
+                          mode === 'audio' &&
+                          audioFormat === af.ext &&
+                          (quality === af.qualityArg ||
+                            (af.ext === 'mp3' && (quality === 'best' || quality === 'auto') && af.qualityArg === '320k'));
+
+                        return (
+                          <div
+                            key={af.id}
+                            onClick={() => {
+                              setMode('audio');
+                              setAudioFormat(af.ext);
+                              setQuality(af.qualityArg);
+                              window.dispatchEvent(
+                                new CustomEvent('app:toast', {
+                                  detail: `Selected: ${af.format} (${af.bitrate})`,
+                                })
+                              );
+                            }}
+                            className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                              isSelected
+                                ? 'bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border-amber-500/60 dark:border-amber-500/60 ring-1 ring-amber-500/40'
+                                : 'bg-white dark:bg-zinc-900/60 hover:bg-slate-50 dark:hover:bg-zinc-900 border-slate-200/90 dark:border-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-700'
+                            }`}
+                          >
+                            {/* Left: Format + Details */}
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold tracking-wide shrink-0 ${af.badgeStyle}`}>
+                                {af.format}
+                              </span>
+                              <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className={`px-2.5 py-1 rounded-md border text-[11px] font-bold tracking-wide ${af.badgeStyle}`}
-                                  >
-                                    {af.format}
+                                  <span className="font-bold text-sm text-slate-900 dark:text-zinc-100">
+                                    {af.bitrate}
                                   </span>
                                   {af.recommended && (
-                                    <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-bold uppercase tracking-wider hidden md:inline">
-                                      ★ Recommended
+                                    <span className="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[9px] font-bold uppercase tracking-wider shrink-0">
+                                      ★ Rec
                                     </span>
                                   )}
                                 </div>
-                              </td>
-
-                              {/* Bitrate & Quality */}
-                              <td className="py-2.5 px-3 whitespace-nowrap">
-                                <div className="flex flex-col">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-slate-900 dark:text-zinc-100 text-xs">
-                                      {af.bitrate}
-                                    </span>
-                                  </div>
-                                  <span className="text-[10px] text-slate-500 dark:text-zinc-400">
-                                    {af.qualityLabel}
-                                  </span>
+                                <div className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                                  {af.qualityLabel}
                                 </div>
-                              </td>
+                              </div>
+                            </div>
 
-                              {/* Codec Specs */}
-                              <td className="py-2.5 px-3 hidden sm:table-cell text-slate-500 dark:text-zinc-400 text-[11px] font-mono whitespace-nowrap">
-                                <span className="text-slate-700 dark:text-zinc-300">{af.codecSpec}</span>
-                              </td>
+                            {/* Right: Size + Action */}
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 font-mono text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                                {af.approxSize}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(true, af.qualityArg, af.ext);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                title={`Download ${af.format} (${af.bitrate})`}
+                              >
+                                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Get {af.format}</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                              {/* Approx Size */}
-                              <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
-                                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300">
-                                  {af.approxSize}
-                                </span>
-                              </td>
-
-                              {/* Action Buttons */}
-                              <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setMode('audio');
-                                      setAudioFormat(af.ext);
-                                      setQuality(af.qualityArg);
-                                      window.dispatchEvent(
-                                        new CustomEvent('app:toast', {
-                                          detail: `Selected: ${af.format} (${af.bitrate})`,
-                                        })
-                                      );
-                                    }}
-                                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 font-semibold'
-                                        : 'bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-slate-200 dark:border-zinc-800'
-                                    }`}
-                                  >
-                                    {isSelected ? 'Active' : 'Select'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDownload(true, af.qualityArg, af.ext)}
-                                    className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1 shadow-xs"
-                                    title={`Download ${af.format} (${af.bitrate})`}
-                                  >
-                                    <Download className="w-3 h-3 stroke-[2.5]" />
-                                    <span>Download</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Audio Table Informational Footer */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-1 text-[11px] text-zinc-400">
-                    <div className="flex items-center gap-1.5 text-zinc-400">
-                      <span className="text-amber-400 font-semibold">💡 Audio Tip:</span>
+                  {/* Informational Footer */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-1 text-xs text-slate-500 dark:text-zinc-400">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-600 dark:text-amber-400 font-semibold">💡 Audio Tip:</span>
                       <span>
-                        MP3 320k is universal for mobile/car audio; FLAC & WAV provide bit-perfect studio master fidelity.
+                        MP3 320k is universal for mobile/car audio · FLAC & WAV provide bit-perfect studio master fidelity.
                       </span>
                     </div>
-                    <span className="font-mono text-[10px] text-zinc-500">
+                    <span className="font-mono text-[11px] text-slate-400 dark:text-zinc-500">
                       Showing {filteredAudioFormats.length} of {distinctAudioFormats.length} audio formats
                     </span>
                   </div>
                 </div>
               ) : (
-                /* PROPER VIDEO STREAMS TABLE */
-                <div className="space-y-2">
-                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-inner">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-zinc-800/90 bg-slate-100/90 dark:bg-zinc-900/60 text-slate-700 dark:text-zinc-400 font-semibold text-[11px] uppercase tracking-wider">
-                          <th className="py-2.5 px-3">Resolution</th>
-                          <th className="py-2.5 px-3">FPS & Refresh</th>
-                          <th className="py-2.5 px-3 hidden sm:table-cell">Video Codec</th>
-                          <th className="py-2.5 px-3">Est. File Size</th>
-                          <th className="py-2.5 px-3 text-right">Instant Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/40">
-                        {distinctVideoFormats.map((f, i) => (
-                          <tr
+                /* PROPER VIDEO STREAMS DECK */
+                <div className="space-y-3">
+                  {/* Video Grid View */}
+                  {matrixViewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {distinctVideoFormats.map((f, i) => {
+                        const isHighRes = (f.height || 0) >= 1080;
+                        const resLabel = f.height ? `${f.height}p` : 'Video';
+                        const qualityText = (f.height || 0) >= 2160 ? '4K Ultra HD' : (f.height || 0) >= 1080 ? 'Full HD 1080p' : (f.height || 0) >= 720 ? 'HD 720p' : `${resLabel} Standard`;
+
+                        return (
+                          <div
                             key={f.id || i}
-                            className="hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors group"
+                            onClick={() => {
+                              setMode('video');
+                              setQuality(f.id);
+                              window.dispatchEvent(
+                                new CustomEvent('app:toast', {
+                                  detail: `Selected: ${resLabel} (${f.ext.toUpperCase()})`,
+                                })
+                              );
+                            }}
+                            className="group relative p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3 bg-white dark:bg-zinc-900/60 hover:bg-slate-50 dark:hover:bg-zinc-900 border-slate-200/90 dark:border-zinc-800/80 hover:border-sky-400/50 dark:hover:border-sky-500/50 shadow-xs"
                           >
-                            <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-zinc-100 whitespace-nowrap">
-                              <span className="px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-600 dark:text-sky-300 border border-sky-500/30 text-[11px] font-bold">
-                                {f.height ? `${f.height}p` : 'Video'}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 font-mono text-slate-500 dark:text-zinc-400 whitespace-nowrap">
-                              {f.fps ? `${f.fps} fps` : 'Standard (30 fps)'}
-                            </td>
-                            <td className="py-2.5 px-3 hidden sm:table-cell text-slate-500 dark:text-zinc-400 text-[11px] font-mono whitespace-nowrap">
-                              {f.vcodec !== 'none' ? f.vcodec.split('.')[0] : f.acodec || f.ext}
-                            </td>
-                            <td className="py-2.5 px-3 font-mono text-[11px] text-slate-700 dark:text-zinc-300 whitespace-nowrap">
-                              {f.estMB ? (
-                                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+                            {/* Card Top: Resolution Tag + FPS + Size */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`px-2.5 py-0.5 rounded-lg border text-xs font-bold tracking-wide ${
+                                  isHighRes
+                                    ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30'
+                                    : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700'
+                                }`}>
+                                  {resLabel}
+                                </span>
+                                {isHighRes && (
+                                  <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 text-[10px] font-bold uppercase tracking-wider">
+                                    High Res
+                                  </span>
+                                )}
+                              </div>
+                              {f.estMB && (
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 font-mono text-[11px] font-medium text-slate-700 dark:text-zinc-300 shrink-0">
                                   {f.estMB}
                                 </span>
-                              ) : (
-                                <span className="text-slate-400 dark:text-zinc-600">—</span>
                               )}
-                            </td>
-                            <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                            </div>
+
+                            {/* Card Middle: Quality & Codec info */}
+                            <div className="space-y-0.5">
+                              <div className="text-base font-bold text-slate-900 dark:text-zinc-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                                {qualityText}
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                                <span>{f.fps ? `${f.fps} fps` : '30 fps'}</span>
+                                <span>•</span>
+                                <span className="font-mono text-[11px]">{f.vcodec !== 'none' ? f.vcodec.split('.')[0] : f.acodec || f.ext}</span>
+                                <span>•</span>
+                                <span className="uppercase font-semibold">{f.ext}</span>
+                              </div>
+                            </div>
+
+                            {/* Card Bottom: Direct Action Row */}
+                            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/60 flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+                                Click to select
+                              </span>
                               <button
                                 type="button"
-                                onClick={() => handleDownload(false, f.id)}
-                                className="px-3 py-1 rounded-md bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-600 dark:text-sky-300 font-semibold text-[11px] transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(false, f.id);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-sm shrink-0"
+                                title={`Download ${resLabel} Video`}
                               >
-                                <Download className="w-3 h-3" />
-                                <span>Get Stream</span>
+                                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Get Video</span>
                               </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Video List View */
+                    <div className="space-y-2">
+                      {distinctVideoFormats.map((f, i) => {
+                        const isHighRes = (f.height || 0) >= 1080;
+                        const resLabel = f.height ? `${f.height}p` : 'Video';
+                        const qualityText = (f.height || 0) >= 2160 ? '4K Ultra HD' : (f.height || 0) >= 1080 ? 'Full HD 1080p' : (f.height || 0) >= 720 ? 'HD 720p' : `${resLabel} Standard`;
 
-                  <div className="flex items-center justify-between px-1 pt-1 text-[11px] text-zinc-500">
+                        return (
+                          <div
+                            key={f.id || i}
+                            onClick={() => {
+                              setMode('video');
+                              setQuality(f.id);
+                              window.dispatchEvent(
+                                new CustomEvent('app:toast', {
+                                  detail: `Selected: ${resLabel} (${f.ext.toUpperCase()})`,
+                                })
+                              );
+                            }}
+                            className="p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 bg-white dark:bg-zinc-900/60 hover:bg-slate-50 dark:hover:bg-zinc-900 border-slate-200/90 dark:border-zinc-800/80 hover:border-sky-400/50 dark:hover:border-sky-500/50"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold tracking-wide shrink-0 ${
+                                isHighRes
+                                  ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30'
+                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700'
+                              }`}>
+                                {resLabel}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-slate-900 dark:text-zinc-100">
+                                  {qualityText}
+                                </div>
+                                <div className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 truncate">
+                                  <span>{f.fps ? `${f.fps} fps` : '30 fps'}</span>
+                                  <span>•</span>
+                                  <span className="font-mono">{f.vcodec !== 'none' ? f.vcodec.split('.')[0] : f.acodec || f.ext}</span>
+                                  <span>•</span>
+                                  <span className="uppercase font-semibold">{f.ext}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              {f.estMB && (
+                                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 font-mono text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                                  {f.estMB}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(false, f.id);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                title={`Download ${resLabel} Video`}
+                              >
+                                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Get Video</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between px-1 pt-1 text-xs text-slate-500 dark:text-zinc-400">
                     <span>Direct progressive & DASH video streams with embedded audio</span>
-                    <span className="font-mono text-[10px]">{distinctVideoFormats.length} streams available</span>
+                    <span className="font-mono text-[11px] text-slate-400 dark:text-zinc-500">
+                      {distinctVideoFormats.length} streams available
+                    </span>
                   </div>
                 </div>
               )}

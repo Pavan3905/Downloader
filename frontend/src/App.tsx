@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
-import { SettingsSheet } from './components/SettingsSheet';
 import { AdvancedSettings } from './types';
-import { Sliders, X } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
-const MemoSettingsSheet = React.memo(SettingsSheet);
 
 // Supported & Rotating Platforms Catalog (with authentic brand gradients and rich glow hues)
 const ROTATING_PLATFORMS = [
@@ -246,7 +243,6 @@ export default function App() {
       <Header
         theme={theme}
         onToggleTheme={toggleTheme}
-        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       {/* Main Workspace */}
@@ -315,40 +311,6 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Settings Slide-Over Drawer Modal */}
-      {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="fixed inset-0"
-            onClick={() => setIsSettingsOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="relative w-full max-w-md h-full bg-zinc-950 border-l border-zinc-800 p-6 overflow-y-auto shadow-2xl z-10 flex flex-col space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-3.5 h-3.5 text-zinc-400" />
-                <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Preferences</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSettingsOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors cursor-pointer"
-                aria-label="Close preferences"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex-1">
-              <MemoSettingsSheet
-                settings={advancedSettings}
-                setSettings={setAdvancedSettings}
-                theme={theme}
-                setTheme={setTheme}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification */}
       {toastMessage && (

@@ -1,16 +1,14 @@
 import React from 'react';
-import { Sun, Moon, Sliders, ArrowDownToLine } from 'lucide-react';
+import { Sun, Moon, ArrowDownToLine } from 'lucide-react';
 
 interface HeaderProps {
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
-  onOpenSettings?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   theme = 'dark',
   onToggleTheme,
-  onOpenSettings,
 }) => {
   const handleScrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -39,18 +37,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1">
-          {/* Preferences Drawer */}
-          {onOpenSettings && (
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className="nav-btn w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border border-transparent hover:border-white/[0.08] active:scale-95 transition-all cursor-pointer"
-              title="Preferences & Audio Options"
-              aria-label="Settings"
-            >
-              <Sliders className="w-3.5 h-3.5" />
-            </button>
-          )}
 
           {/* Theme toggle */}
           {onToggleTheme && (

@@ -845,7 +845,7 @@ async function startServer() {
     if (AUTH_USER && AUTH_PASSWORD) {
       const authHeader = req.headers.authorization || '';
       if (!authHeader.toLowerCase().startsWith('basic ')) {
-        res.setHeader('WWW-Authenticate', 'Basic realm="Clipstream"');
+        res.setHeader('WWW-Authenticate', 'Basic realm="Downloader"');
         return res.status(401).send('Authentication required');
       }
       try {
@@ -854,11 +854,11 @@ async function startServer() {
         const validUser = crypto.timingSafeEqual(Buffer.from(username || ''), Buffer.from(AUTH_USER));
         const validPass = crypto.timingSafeEqual(Buffer.from(password || ''), Buffer.from(AUTH_PASSWORD));
         if (!validUser || !validPass) {
-          res.setHeader('WWW-Authenticate', 'Basic realm="Clipstream"');
+          res.setHeader('WWW-Authenticate', 'Basic realm="Downloader"');
           return res.status(401).send('Invalid credentials');
         }
       } catch {
-        res.setHeader('WWW-Authenticate', 'Basic realm="Clipstream"');
+        res.setHeader('WWW-Authenticate', 'Basic realm="Downloader"');
         return res.status(401).send('Invalid authentication header');
       }
     }
@@ -1139,7 +1139,7 @@ async function startServer() {
 
     const isAudio = Boolean(audio_only);
     const ext = isAudio ? (audio_format === 'flac' ? 'flac' : audio_format === 'm4a' ? 'm4a' : 'mp3') : 'mp4';
-    const zipName = `clipstream_batch_${Date.now()}.zip`;
+    const zipName = `downloader_batch_${Date.now()}.zip`;
 
     res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
     res.setHeader('Content-Type', 'application/zip');

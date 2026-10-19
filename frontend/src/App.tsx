@@ -290,7 +290,7 @@ export default function App() {
 
         {/* Minimal Footer */}
         <footer className="text-center pt-4 pb-2 text-[11px] text-zinc-600">
-          <span>Clipstream Next-Gen Engine · Ultra-fast, client-side, zero server limits.</span>
+          <span>Downloader · Ultra-fast, direct stream, zero server limits.</span>
         </footer>
       </main>
 

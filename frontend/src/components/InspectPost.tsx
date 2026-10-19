@@ -289,7 +289,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
       const link = document.createElement('a');
       link.href = downloadUrl;
       const cleanTitle = (media?.title || 'batch').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
-      link.download = `clipstream_${cleanTitle}_${Date.now()}.zip`;
+      link.download = `downloader_${cleanTitle}_${Date.now()}.zip`;
       document.body.appendChild(link);
       link.click();
 
@@ -821,7 +821,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 className="px-5 py-2.5 rounded-xl btn-amber-glow text-xs shadow-lg hover:brightness-110 active:scale-95 cursor-grab transition-all"
                 title="Drag this button to your bookmarks bar"
               >
-                ★ Clipstream Instant
+                ★ Downloader Instant
               </a>
               <span className="text-[11px] text-zinc-500">
                 (Click and drag to Bookmarks bar)

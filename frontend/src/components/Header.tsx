@@ -24,15 +24,15 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={handleScrollToTop}
           className="group flex items-center gap-2.5 select-none text-left bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
-          title="Clipstream - Home"
-          aria-label="Clipstream Home"
+          title="Downloader - Home"
+          aria-label="Downloader Home"
         >
           <div className="brand-tile w-7 h-7 rounded-lg bg-zinc-900/90 border border-white/10 flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/30 group-hover:bg-zinc-800 transition-all duration-200 shadow-sm">
             <ArrowDownToLine className="w-3.5 h-3.5 stroke-[2.2] group-hover:translate-y-0.5 transition-transform duration-200" />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold tracking-tight text-zinc-100 group-hover:text-white transition-colors font-sans">
-              Clipstream
+              Downloader
             </span>
             <span
               className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.85)]"

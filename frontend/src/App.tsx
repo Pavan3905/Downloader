@@ -250,7 +250,7 @@ export default function App() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
+      <main className="flex-1 max-w-4xl lg:max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
         <div
           className="text-center pt-2 pb-2 select-none flex items-center justify-center w-full px-2"
@@ -346,7 +346,7 @@ export default function App() {
 
       {/* Aesthetic Minimal Footer */}
       <footer className="w-full border-t border-white/[0.06] mt-auto py-7 px-4 sm:px-6 select-none z-10 transition-colors">
-        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           {/* Left: Brand & Engine Live Dot */}
           <div className="flex items-center gap-2.5">
             <div className="w-5 h-5 rounded-md bg-zinc-900 border border-white/10 flex items-center justify-center text-emerald-400">

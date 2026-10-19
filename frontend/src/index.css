@@ -154,6 +154,43 @@
   animation: shimmer 4s linear infinite;
 }
 
+/* Smooth Vertical Platform Title Roll Animation */
+@keyframes platformRollOut {
+  0% {
+    transform: translateY(0%) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: translateY(-85%) scale(0.95);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes platformRollIn {
+  0% {
+    transform: translateY(85%) scale(0.95);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  100% {
+    transform: translateY(0%) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+.platform-roll-in {
+  animation: platformRollIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.platform-roll-out {
+  animation: platformRollOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
 /* Light Mode Overrides */
 html.light,
 html.light body,
@@ -164,6 +201,13 @@ html.light body,
 
 .light .bg-black {
   background-color: #fbfbfd !important;
+}
+
+.light h1 span.bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, #09090b, #27272a, #52525b) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
 }
 
 .light .bg-zinc-950 {

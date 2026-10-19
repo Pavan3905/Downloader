@@ -8,63 +8,63 @@ import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles, Command } fr
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
 
-// Supported & Rotating Platforms Catalog (with brand gradients and active glows)
+// Supported & Rotating Platforms Catalog (with brand gradients, glow hues, and sample links)
 const ROTATING_PLATFORMS = [
   {
     name: 'YouTube',
     badge: '4K Ultra HD',
+    sampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     gradient: 'from-red-500 via-rose-500 to-amber-500',
-    color: 'hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300',
-    activeClass: 'border-red-500/60 bg-red-500/15 text-red-300 shadow-[0_0_18px_rgba(239,68,68,0.3)] ring-1 ring-red-500/40',
     dot: 'bg-red-500',
+    glow: 'radial-gradient(circle, rgba(239,68,68,0.35) 0%, transparent 70%)',
   },
   {
     name: 'Instagram',
     badge: 'Reels 1080p',
+    sampleUrl: 'https://www.instagram.com/reel/C8Xy_sample',
     gradient: 'from-pink-500 via-purple-500 to-rose-400',
-    color: 'hover:border-pink-500/40 hover:bg-pink-500/10 hover:text-pink-300',
-    activeClass: 'border-pink-500/60 bg-pink-500/15 text-pink-300 shadow-[0_0_18px_rgba(236,72,153,0.3)] ring-1 ring-pink-500/40',
     dot: 'bg-pink-500',
+    glow: 'radial-gradient(circle, rgba(236,72,153,0.35) 0%, transparent 70%)',
   },
   {
     name: 'Snapchat',
     badge: 'Spotlight & Stories',
+    sampleUrl: 'https://www.snapchat.com/spotlight/W7_EDnXwT1gAA',
     gradient: 'from-yellow-400 via-amber-400 to-orange-400',
-    color: 'hover:border-yellow-500/40 hover:bg-yellow-500/10 hover:text-yellow-300',
-    activeClass: 'border-yellow-500/60 bg-yellow-500/15 text-yellow-300 shadow-[0_0_18px_rgba(234,179,8,0.3)] ring-1 ring-yellow-500/40',
     dot: 'bg-yellow-400',
+    glow: 'radial-gradient(circle, rgba(234,179,8,0.35) 0%, transparent 70%)',
   },
   {
     name: 'TikTok',
     badge: 'HD (No Watermark)',
+    sampleUrl: 'https://www.tiktok.com/@tiktok/video/7106594312292453678',
     gradient: 'from-cyan-400 via-teal-400 to-emerald-400',
-    color: 'hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:text-cyan-300',
-    activeClass: 'border-cyan-500/60 bg-cyan-500/15 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.3)] ring-1 ring-cyan-500/40',
     dot: 'bg-cyan-400',
+    glow: 'radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)',
   },
   {
     name: 'X (Twitter)',
     badge: 'Direct Edge MP4',
+    sampleUrl: 'https://x.com/SpaceX/status/1649078635876352000',
     gradient: 'from-slate-200 via-sky-300 to-zinc-400',
-    color: 'hover:border-slate-500/40 hover:bg-slate-500/10 hover:text-slate-200',
-    activeClass: 'border-slate-400/60 bg-slate-500/15 text-slate-200 shadow-[0_0_18px_rgba(148,163,184,0.3)] ring-1 ring-slate-400/40',
-    dot: 'bg-slate-400',
+    dot: 'bg-slate-300',
+    glow: 'radial-gradient(circle, rgba(148,163,184,0.3) 0%, transparent 70%)',
   },
   {
     name: 'SoundCloud',
     badge: '320kbps Lossless',
+    sampleUrl: 'https://soundcloud.com/octobersveryown/champagnepapi-laugh-now-cry',
     gradient: 'from-amber-400 via-orange-500 to-rose-400',
-    color: 'hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-300',
-    activeClass: 'border-amber-500/60 bg-amber-500/15 text-amber-300 shadow-[0_0_18px_rgba(245,158,11,0.3)] ring-1 ring-amber-500/40',
     dot: 'bg-amber-400',
+    glow: 'radial-gradient(circle, rgba(245,158,11,0.35) 0%, transparent 70%)',
   },
   {
     name: 'Reddit',
     badge: 'Merged Audio',
+    sampleUrl: 'https://www.reddit.com/r/aww/comments/12345/cute_cat/',
     gradient: 'from-orange-500 via-red-500 to-amber-500',
-    color: 'hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300',
-    activeClass: 'border-orange-500/60 bg-orange-500/15 text-orange-300 shadow-[0_0_18px_rgba(249,115,22,0.3)] ring-1 ring-orange-500/40',
     dot: 'bg-orange-500',
+    glow: 'radial-gradient(circle, rgba(249,115,22,0.35) 0%, transparent 70%)',
   },
 ];
 
@@ -72,17 +72,45 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Auto-rotating platform name in hero
+  // Auto-rotating platform name with smooth vertical roll animation & pause on hover
   const [platformIdx, setPlatformIdx] = useState(0);
+  const [prevPlatformIdx, setPrevPlatformIdx] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const changePlatform = React.useCallback(
+    (newIdx: number) => {
+      if (newIdx === platformIdx || prevPlatformIdx !== null) return;
+      setPrevPlatformIdx(platformIdx);
+      setPlatformIdx(newIdx);
+      setTimeout(() => {
+        setPrevPlatformIdx(null);
+      }, 500);
+    },
+    [platformIdx, prevPlatformIdx]
+  );
+
+  const nextPlatform = React.useCallback(() => {
+    changePlatform((platformIdx + 1) % ROTATING_PLATFORMS.length);
+  }, [platformIdx, changePlatform]);
 
   useEffect(() => {
+    if (isPaused) return;
     const timer = setInterval(() => {
-      setPlatformIdx((prev) => (prev + 1) % ROTATING_PLATFORMS.length);
-    }, 2400);
+      nextPlatform();
+    }, 2800);
     return () => clearInterval(timer);
-  }, []);
+  }, [isPaused, nextPlatform]);
 
   const currentPlatform = ROTATING_PLATFORMS[platformIdx];
+
+  const handleTrySample = (url: string) => {
+    window.dispatchEvent(
+      new CustomEvent('app:global-paste', {
+        detail: { url, autoDownload: false },
+      })
+    );
+    showToast(`Loaded ${currentPlatform.name} sample link! Inspecting...`);
+  };
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -217,18 +245,86 @@ export default function App() {
       {/* Main Workspace */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
-        <div className="text-center pt-2 pb-2">
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+        <div
+          className="text-center pt-2 pb-2 select-none flex flex-col items-center justify-center space-y-3"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight flex flex-col items-center justify-center">
+            {/* Top Line */}
             <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-              Download Any Video from{' '}
+              Download Any Video from
             </span>
-            <span
-              key={currentPlatform.name}
-              className={`bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-block animate-in fade-in slide-in-from-bottom-1 duration-200 font-extrabold drop-shadow-sm`}
+
+            {/* Bottom Dynamic Platform with Smooth Rolling Transition & Glow */}
+            <div
+              className="relative inline-flex items-center justify-center h-[1.35em] min-w-[220px] sm:min-w-[340px] overflow-hidden cursor-pointer group mt-0.5"
+              onClick={nextPlatform}
+              title="Click to cycle to next platform"
+              aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
             >
-              {currentPlatform.name}
-            </span>
+              {/* Dynamic Hue Ambient Backlight */}
+              <div
+                className="absolute -inset-x-12 -inset-y-4 rounded-full blur-3xl opacity-35 pointer-events-none transition-all duration-700 ease-out"
+                style={{ background: currentPlatform.glow }}
+              />
+
+              {/* Outgoing Platform (Roll Out) */}
+              {prevPlatformIdx !== null && (
+                <span
+                  className={`absolute inset-0 flex items-center justify-center font-black tracking-tight bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-roll-out drop-shadow-sm`}
+                >
+                  {ROTATING_PLATFORMS[prevPlatformIdx].name}
+                </span>
+              )}
+
+              {/* Active Platform (Roll In) */}
+              <span
+                className={`${prevPlatformIdx !== null ? 'platform-roll-in' : ''} font-black tracking-tight bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-flex items-center justify-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200`}
+              >
+                {currentPlatform.name}
+              </span>
+            </div>
           </h1>
+
+          {/* Interactive Capability Pill & Try Sample */}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md text-xs text-zinc-300 shadow-sm transition-all duration-300 hover:border-zinc-700">
+            <span className={`w-2 h-2 rounded-full ${currentPlatform.dot} animate-pulse`} />
+            <span className="font-medium text-zinc-200">{currentPlatform.badge}</span>
+            <span className="text-zinc-600">·</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTrySample(currentPlatform.sampleUrl);
+              }}
+              className="text-emerald-400 hover:text-emerald-300 hover:underline font-medium cursor-pointer transition-colors"
+              title={`Load sample ${currentPlatform.name} link into downloader`}
+            >
+              Try sample →
+            </button>
+          </div>
+
+          {/* Interactive Navigation Dots (Clickable Carousel Track) */}
+          <div className="flex items-center gap-1.5 pt-0.5">
+            {ROTATING_PLATFORMS.map((platform, i) => {
+              const isActive = i === platformIdx;
+              return (
+                <button
+                  key={platform.name}
+                  type="button"
+                  onClick={() => changePlatform(i)}
+                  className={`h-1.5 transition-all duration-300 rounded-full cursor-pointer ${
+                    isActive
+                      ? `w-6 ${platform.dot} shadow-[0_0_8px_rgba(255,255,255,0.35)]`
+                      : 'w-1.5 bg-zinc-800 hover:bg-zinc-600'
+                  }`}
+                  title={`Switch to ${platform.name}`}
+                  aria-label={`Switch to ${platform.name}`}
+                />
+              );
+            })}
+          </div>
         </div>
 
         {/* Downloader Core Section */}

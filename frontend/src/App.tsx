@@ -246,7 +246,7 @@ export default function App() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
         <div
-          className="text-center pt-2 pb-2 select-none flex flex-col items-center justify-center space-y-3"
+          className="text-center pt-2 pb-2 select-none flex items-center justify-center w-full overflow-hidden"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
@@ -286,45 +286,6 @@ export default function App() {
               </span>
             </span>
           </h1>
-
-          {/* Interactive Capability Pill & Try Sample */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-md text-xs text-zinc-300 shadow-sm transition-all duration-300 hover:border-zinc-700">
-            <span className={`w-2 h-2 rounded-full ${currentPlatform.dot} animate-pulse`} />
-            <span className="font-medium text-zinc-200">{currentPlatform.badge}</span>
-            <span className="text-zinc-600">·</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleTrySample(currentPlatform.sampleUrl);
-              }}
-              className="text-emerald-400 hover:text-emerald-300 hover:underline font-medium cursor-pointer transition-colors"
-              title={`Load sample ${currentPlatform.name} link into downloader`}
-            >
-              Try sample →
-            </button>
-          </div>
-
-          {/* Interactive Navigation Dots (Clickable Carousel Track) */}
-          <div className="flex items-center gap-1.5 pt-0.5">
-            {ROTATING_PLATFORMS.map((platform, i) => {
-              const isActive = i === platformIdx;
-              return (
-                <button
-                  key={platform.name}
-                  type="button"
-                  onClick={() => changePlatform(i)}
-                  className={`h-1.5 transition-all duration-300 rounded-full cursor-pointer ${
-                    isActive
-                      ? `w-6 ${platform.dot} shadow-[0_0_8px_rgba(255,255,255,0.35)]`
-                      : 'w-1.5 bg-zinc-800 hover:bg-zinc-600'
-                  }`}
-                  title={`Switch to ${platform.name}`}
-                  aria-label={`Switch to ${platform.name}`}
-                />
-              );
-            })}
-          </div>
         </div>
 
         {/* Downloader Core Section */}

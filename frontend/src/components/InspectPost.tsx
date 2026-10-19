@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Link2,
   Sparkles,
@@ -13,6 +13,11 @@ import {
   ChevronUp,
   X,
   Scissors,
+  Bookmark,
+  Archive,
+  CheckSquare,
+  Square,
+  Zap,
 } from 'lucide-react';
 import { MediaInfo, AdvancedSettings } from '../types';
 
@@ -28,6 +33,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingZip, setDownloadingZip] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaInfo | null>(null);
 
@@ -46,6 +52,25 @@ export const InspectPost: React.FC<InspectPostProps> = ({
   // Auto clipboard detection
   const [detectedClipboardUrl, setDetectedClipboardUrl] = useState<string | null>(null);
 
+  // Bookmarklet modal
+  const [showBookmarkletModal, setShowBookmarkletModal] = useState(false);
+
+  // Playlist batch selection
+  const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
+  const [showPlaylistItems, setShowPlaylistItems] = useState(false);
+
+  // Auto-select all playlist entries on inspection
+  useEffect(() => {
+    if (media?.entries && media.entries.length > 0) {
+      setSelectedEntries(media.entries.map((e) => e.url));
+      setShowPlaylistItems(true);
+    } else {
+      setSelectedEntries([]);
+      setShowPlaylistItems(false);
+    }
+  }, [media]);
+
+  // Check clipboard on window focus
   useEffect(() => {
     const checkClipboard = async () => {
       try {
@@ -82,77 +107,163 @@ export const InspectPost: React.FC<InspectPostProps> = ({
     }
   };
 
-  const handleInspect = async (targetUrl?: string) => {
-    const finalUrl = (targetUrl || url).trim();
-    if (!finalUrl) return;
+  const handleInspect = useCallback(
+    async (targetUrl?: string) => {
+      const finalUrl = (targetUrl || url).trim();
+      if (!finalUrl) return;
 
-    if (!/^https?:\/\//i.test(finalUrl)) {
-      setError('Please enter a valid HTTP or HTTPS link.');
-      return;
-    }
+      if (!/^https?:\/\//i.test(finalUrl)) {
+        setError('Please enter a valid HTTP or HTTPS link.');
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch('/api/inspect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: finalUrl }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to inspect link.');
+        }
+
+        const data: MediaInfo = await res.json();
+        setMedia(data);
+      } catch (err: any) {
+        setError(err.message || 'Inspection failed. Check network or URL.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [url]
+  );
+
+  const handleDownload = useCallback(
+    (isAudioOverride?: boolean) => {
+      const targetUrl = media ? media.webpage_url : url.trim();
+      if (!targetUrl) return;
+
+      const isAudio = isAudioOverride !== undefined ? isAudioOverride : mode === 'audio';
+      const selectedFormat = isAudio ? 'best' : quality;
+      const mediaTitle = media?.title || '';
+
+      // Direct Cobalt-Style CDN bypass stream to device
+      const params = new URLSearchParams({
+        url: targetUrl,
+        title: mediaTitle,
+        format_id: selectedFormat,
+        audio_only: isAudio ? 'true' : 'false',
+        audio_format: audioFormat,
+      });
+
+      if (clipStart.trim()) params.append('clip_start', clipStart.trim());
+      if (clipEnd.trim()) params.append('clip_end', clipEnd.trim());
+
+      const streamUrl = `/api/stream?${params.toString()}`;
+
+      const link = document.createElement('a');
+      link.href = streamUrl;
+      link.setAttribute('download', '');
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      }, 1000);
+
+      window.dispatchEvent(
+        new CustomEvent('app:toast', {
+          detail: `Direct download started: ${mediaTitle || 'Media file'}`,
+        })
+      );
+    },
+    [media, url, mode, quality, audioFormat, clipStart, clipEnd]
+  );
+
+  // Global Keyboard Paste & 1-Click Bookmarklet Listener
+  useEffect(() => {
+    const onGlobalPaste = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string; autoDownload?: boolean }>;
+      const { url: newUrl, autoDownload } = customEvent.detail || {};
+      if (newUrl && /^https?:\/\//i.test(newUrl)) {
+        setUrl(newUrl);
+        handleInspect(newUrl).then(() => {
+          if (autoDownload) {
+            setTimeout(() => {
+              handleDownload();
+            }, 600);
+          }
+        });
+      }
+    };
+    window.addEventListener('app:global-paste', onGlobalPaste);
+    return () => window.removeEventListener('app:global-paste', onGlobalPaste);
+  }, [handleInspect, handleDownload]);
+
+  // Playlist & Batch ZIP Downloader (1-Click ZIP Stream)
+  const handleBatchZipDownload = async () => {
+    const urlsToDownload =
+      selectedEntries.length > 0
+        ? selectedEntries
+        : media?.entries && media.entries.length > 0
+        ? media.entries.map((e) => e.url)
+        : [media ? media.webpage_url : url.trim()];
+
+    if (urlsToDownload.length === 0) return;
+
+    setDownloadingZip(true);
+    window.dispatchEvent(
+      new CustomEvent('app:toast', {
+        detail: `Bundling ${urlsToDownload.length} items into a direct .ZIP stream...`,
+      })
+    );
 
     try {
-      const res = await fetch('/api/inspect', {
+      const res = await fetch('/api/batch-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: finalUrl }),
+        body: JSON.stringify({
+          urls: urlsToDownload,
+          audio_only: mode === 'audio',
+          audio_format: audioFormat,
+          quality,
+        }),
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to inspect link.');
+        throw new Error('Failed to create batch ZIP stream.');
       }
 
-      const data: MediaInfo = await res.json();
-      setMedia(data);
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const cleanTitle = (media?.title || 'batch').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+      link.download = `clipstream_${cleanTitle}_${Date.now()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+        if (link.parentNode) link.parentNode.removeChild(link);
+      }, 2000);
+
+      window.dispatchEvent(
+        new CustomEvent('app:toast', {
+          detail: `Batch ZIP download ready!`,
+        })
+      );
     } catch (err: any) {
-      setError(err.message || 'Inspection failed. Check network or URL.');
+      setError(err.message || 'Batch ZIP download failed.');
     } finally {
-      setLoading(false);
+      setDownloadingZip(false);
     }
-  };
-
-  const handleDownload = (isAudioOverride?: boolean) => {
-    const targetUrl = media ? media.webpage_url : url.trim();
-    if (!targetUrl) return;
-
-    const isAudio = isAudioOverride !== undefined ? isAudioOverride : mode === 'audio';
-    const selectedFormat = isAudio ? 'best' : quality;
-    const mediaTitle = media?.title || '';
-
-    // Direct stream directly to user's device (bypasses server library)
-    const params = new URLSearchParams({
-      url: targetUrl,
-      title: mediaTitle,
-      format_id: selectedFormat,
-      audio_only: isAudio ? 'true' : 'false',
-      audio_format: audioFormat,
-    });
-
-    if (clipStart.trim()) params.append('clip_start', clipStart.trim());
-    if (clipEnd.trim()) params.append('clip_end', clipEnd.trim());
-
-    const streamUrl = `/api/stream?${params.toString()}`;
-
-    const link = document.createElement('a');
-    link.href = streamUrl;
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      if (link.parentNode) {
-        link.parentNode.removeChild(link);
-      }
-    }, 1000);
-
-    window.dispatchEvent(
-      new CustomEvent('app:toast', {
-        detail: `Direct download started: ${mediaTitle || 'Media file'}`,
-      })
-    );
   };
 
   const handleQueueDownload = async () => {
@@ -178,29 +289,146 @@ export const InspectPost: React.FC<InspectPostProps> = ({
         clip_start: clipStart.trim() || undefined,
         clip_end: clipEnd.trim() || undefined,
       });
+
+      window.dispatchEvent(
+        new CustomEvent('app:toast', {
+          detail: `Queued "${media?.title || 'Media'}" to library`,
+        })
+      );
     } catch (err: any) {
-      setError(err.message || 'Download failed to start.');
+      setError(err.message || 'Failed to queue download.');
     } finally {
       setDownloading(false);
     }
   };
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return 'Live';
+  const formatDuration = (seconds?: number | null) => {
+    if (!seconds) return '0:00';
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  // Smart Platform Detection Badge
+  const getPlatformDetails = () => {
+    const rawUrl = (url || media?.webpage_url || '').toLowerCase();
+    const ext = (media?.extractor || '').toLowerCase();
+
+    if (rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be') || ext.includes('youtube')) {
+      return {
+        name: 'YouTube',
+        badge: '4K Ultra HD',
+        bg: 'bg-red-500/10 text-red-400 border-red-500/20',
+        dot: 'bg-red-500',
+      };
+    }
+    if (rawUrl.includes('instagram.com') || ext.includes('instagram')) {
+      return {
+        name: 'Instagram',
+        badge: 'Reels 1080p HD',
+        bg: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+        dot: 'bg-pink-500',
+      };
+    }
+    if (rawUrl.includes('tiktok.com') || ext.includes('tiktok')) {
+      return {
+        name: 'TikTok',
+        badge: 'HD (No Watermark)',
+        bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+        dot: 'bg-cyan-400',
+      };
+    }
+    if (rawUrl.includes('twitter.com') || rawUrl.includes('x.com') || ext.includes('twitter')) {
+      return {
+        name: 'X (Twitter)',
+        badge: 'Direct Edge MP4',
+        bg: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+        dot: 'bg-slate-300',
+      };
+    }
+    if (rawUrl.includes('soundcloud.com') || ext.includes('soundcloud')) {
+      return {
+        name: 'SoundCloud',
+        badge: '320kbps Lossless',
+        bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        dot: 'bg-amber-400',
+      };
+    }
+    if (rawUrl.includes('reddit.com') || rawUrl.includes('v.redd.it') || ext.includes('reddit')) {
+      return {
+        name: 'Reddit',
+        badge: 'Merged Audio+Video',
+        bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+        dot: 'bg-orange-500',
+      };
+    }
+    if (rawUrl.includes('vimeo.com') || ext.includes('vimeo')) {
+      return {
+        name: 'Vimeo',
+        badge: 'Full 1080p 60fps',
+        bg: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        dot: 'bg-blue-400',
+      };
+    }
+    if (/^https?:\/\//i.test(rawUrl)) {
+      return {
+        name: 'Direct CDN',
+        badge: 'Edge Stream Bypass',
+        bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        dot: 'bg-emerald-400',
+      };
+    }
+    return null;
+  };
+
+  const platform = getPlatformDetails();
+
+  // Bookmarklet javascript code for 1-click downloads
+  const bookmarkletHref = `javascript:(function(){var u=window.location.href;window.open('${
+    typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+  }/?url='+encodeURIComponent(u)+'&auto=1','_blank');})();`;
+
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-4">
-      {/* Auto-detected copied link banner */}
-      {detectedClipboardUrl && !url && (
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-700/80 text-xs text-zinc-300 animate-in fade-in slide-in-from-top-2 duration-150 shadow-xl">
+    <div id="downloader-section" className="space-y-4">
+      {/* Top Smart Utility Row: Platform Badge & 1-Click Bookmarklet Trigger */}
+      <div className="flex items-center justify-between text-xs px-1">
+        <div className="flex items-center gap-2">
+          {platform ? (
+            <div
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all ${platform.bg}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${platform.dot}`} />
+              <span>{platform.name}</span>
+              <span className="opacity-50">·</span>
+              <span className="opacity-90">{platform.badge}</span>
+            </div>
+          ) : (
+            <span className="text-zinc-500 text-[11px] flex items-center gap-1">
+              <Zap className="w-3 h-3 text-emerald-400" />
+              <span>Press <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px]">Ctrl+V</kbd> anywhere to paste</span>
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowBookmarkletModal(true)}
+          className="text-zinc-400 hover:text-zinc-200 text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+          title="1-Click Browser Bookmarklet"
+        >
+          <Bookmark className="w-3 h-3 text-amber-400" />
+          <span>1-Click Bookmarklet</span>
+        </button>
+      </div>
+
+      {/* Auto-Clipboard Detection Pill Banner */}
+      {detectedClipboardUrl && (
+        <div className="p-2.5 rounded-xl bg-zinc-900/90 border border-emerald-500/30 text-xs flex items-center justify-between shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-1">
           <div className="flex items-center gap-2 truncate pr-2">
             <ClipboardPaste className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span className="truncate text-zinc-400">
-              Copied link detected: <span className="text-zinc-200 font-mono text-[11px]">{detectedClipboardUrl}</span>
+              Copied link detected:{' '}
+              <span className="text-zinc-200 font-mono text-[11px]">{detectedClipboardUrl}</span>
             </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -234,7 +462,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
             e.preventDefault();
             handleInspect();
           }}
-          className="relative flex items-center bg-zinc-900/90 dark:bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-xl transition-all focus-within:border-zinc-600 focus-within:ring-2 focus-within:ring-zinc-700/30"
+          className="relative flex items-center bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-xl transition-all focus-within:border-zinc-600 focus-within:ring-2 focus-within:ring-zinc-700/30"
         >
           <div className="pl-4 text-zinc-500">
             <Link2 className="w-4 h-4" />
@@ -249,7 +477,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                 setMedia(null);
               }
             }}
-            placeholder="Paste any video, audio, or social link..."
+            placeholder="Paste any YouTube, Instagram, TikTok, or video link..."
             className="w-full h-13 pl-3 pr-28 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
           />
 
@@ -261,7 +489,11 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                 className="p-2 text-zinc-400 hover:text-zinc-200 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer text-xs flex items-center gap-1"
                 title="Paste from clipboard"
               >
-                {pasted ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <ClipboardPaste className="w-3.5 h-3.5" />}
+                {pasted ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <ClipboardPaste className="w-3.5 h-3.5" />
+                )}
                 <span className="text-[11px] font-medium hidden sm:inline">Paste</span>
               </button>
             )}
@@ -272,7 +504,11 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                 disabled={loading}
                 className="h-9 px-3.5 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-sm"
               >
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {loading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )}
                 <span>Inspect</span>
               </button>
             )}
@@ -314,6 +550,47 @@ export const InspectPost: React.FC<InspectPostProps> = ({
           >
             Dismiss
           </button>
+        </div>
+      )}
+
+      {/* 1-Click Bookmarklet Modal */}
+      {showBookmarkletModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-semibold text-zinc-100">1-Click Browser Bookmarklet</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBookmarkletModal(false)}
+                className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Drag the button below to your browser’s bookmarks bar. Whenever you are on YouTube,
+              Instagram, TikTok, or Reddit, click the bookmark to trigger an instant download!
+            </p>
+
+            <div className="flex items-center justify-center py-4 bg-zinc-950 rounded-xl border border-zinc-800">
+              <a
+                href={bookmarkletHref}
+                onClick={(e) => e.preventDefault()}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-zinc-950 font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 cursor-grab transition-all"
+                title="Drag this button to your bookmarks bar"
+              >
+                ★ Clipstream Instant
+              </a>
+            </div>
+
+            <p className="text-[11px] text-zinc-500 text-center">
+              (Drag and drop onto your browser's bookmarks bar)
+            </p>
+          </div>
         </div>
       )}
 
@@ -448,6 +725,89 @@ export const InspectPost: React.FC<InspectPostProps> = ({
             </button>
           </div>
 
+          {/* Full Playlist & Batch ZIP Panel */}
+          {media.entries && media.entries.length > 0 && (
+            <div className="pt-3 border-t border-zinc-800/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-zinc-300 font-semibold">
+                  <Archive className="w-3.5 h-3.5 text-amber-400" />
+                  <span>
+                    Playlist Collection ({selectedEntries.length}/{media.entries.length} selected)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedEntries.length === media.entries.length) {
+                        setSelectedEntries([]);
+                      } else {
+                        setSelectedEntries(media.entries.map((e) => e.url));
+                      }
+                    }}
+                    className="text-[11px] text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                  >
+                    {selectedEntries.length === media.entries.length ? 'Deselect All' : 'Select All'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBatchZipDownload}
+                    disabled={downloadingZip || selectedEntries.length === 0}
+                    className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {downloadingZip ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Archive className="w-3 h-3" />
+                    )}
+                    <span>Download All (.ZIP)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Collapsible Playlist Items List */}
+              {showPlaylistItems && (
+                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                  {media.entries.map((item, idx) => {
+                    const isSelected = selectedEntries.includes(item.url);
+                    return (
+                      <div
+                        key={item.id || idx}
+                        onClick={() => {
+                          setSelectedEntries((prev) =>
+                            isSelected ? prev.filter((u) => u !== item.url) : [...prev, item.url]
+                          );
+                        }}
+                        className={`flex items-center gap-2.5 p-2 rounded-lg border transition-colors cursor-pointer select-none ${
+                          isSelected
+                            ? 'bg-zinc-800/80 border-zinc-700/80 text-zinc-200'
+                            : 'bg-zinc-950/40 border-zinc-800/40 text-zinc-500 hover:bg-zinc-900'
+                        }`}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        ) : (
+                          <Square className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                        )}
+                        <span className="font-mono text-[10px] text-zinc-500 shrink-0">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <span className="truncate flex-1 font-medium text-[11px]">{item.title}</span>
+                        {item.duration && (
+                          <span className="text-[10px] font-mono text-zinc-500 shrink-0">
+                            {formatDuration(item.duration)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Collapsible Format & Advanced Options */}
           {showOptions && (
             <div className="pt-2 border-t border-zinc-800/40 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-in fade-in duration-150">
@@ -487,7 +847,11 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer w-full disabled:opacity-50"
                   title="Download in background to server library"
                 >
-                  {downloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3 text-sky-400" />}
+                  {downloading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Download className="w-3 h-3 text-sky-400" />
+                  )}
                   <span className="truncate">Save to Server</span>
                 </button>
               </div>

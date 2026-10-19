@@ -4,7 +4,11 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import { spawn, execSync } from 'child_process';
+
+const require = createRequire(import.meta.url);
+const archiver = require('archiver');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +16,7 @@ const __dirname = path.dirname(__filename);
 const ROOT = __dirname;
 const DOWNLOADS_DIR = path.resolve(process.env.CLIPSTREAM_DOWNLOAD_DIR || path.join(ROOT, 'downloads'));
 const COOKIES_FILE = path.join(DOWNLOADS_DIR, '.youtube_cookies.txt');
+const STATE_FILE = path.join(DOWNLOADS_DIR, '.state.json');
 
 if (!fs.existsSync(DOWNLOADS_DIR)) {
   fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
@@ -88,6 +93,44 @@ interface DownloadJob {
 const JOBS = new Map<string, DownloadJob>();
 const MAX_CONCURRENT_DOWNLOADS = parseInt(process.env.MAX_CONCURRENT_DOWNLOADS || '2', 10);
 const MAX_STORAGE_BYTES = parseInt(process.env.MAX_STORAGE_MB || '800', 10) * 1024 * 1024;
+
+// Persistent state hydration & save
+function loadState(): void {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      const raw = fs.readFileSync(STATE_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        for (const j of parsed) {
+          if (j && j.id) {
+            if (j.status === 'downloading') {
+              j.status = 'failed';
+              j.error = 'Interrupted by server restart';
+            }
+            JOBS.set(j.id, j);
+          }
+        }
+        console.log(`[State] Hydrated ${JOBS.size} persistent jobs from disk.`);
+      }
+    }
+  } catch (err) {
+    console.warn('[State] Could not load state file:', err);
+  }
+}
+
+let saveStateTimer: NodeJS.Timeout | null = null;
+function persistState(): void {
+  if (saveStateTimer) clearTimeout(saveStateTimer);
+  saveStateTimer = setTimeout(() => {
+    try {
+      const list = Array.from(JOBS.values()).map(safeJob);
+      fs.writeFileSync(STATE_FILE, JSON.stringify(list, null, 2), 'utf-8');
+    } catch {}
+  }, 1000);
+}
+
+// Hydrate state on startup
+loadState();
 
 function autoPruneOldFiles() {
   try {
@@ -216,6 +259,80 @@ function runYtDlp(args: string[], timeoutMs: number): Promise<{ code: number | n
   });
 }
 
+// Multi-Engine / Multi-Client Bot Shield: Auto-rotates between spoofing profiles on bot checks or 429 rate limits
+const BOT_SHIELD_CLIENTS = ['android,web', 'ios,web', 'tv_embedded,web', 'mweb,web'];
+
+async function runYtDlpWithShield(
+  buildArgs: (client: string) => string[],
+  timeoutMs: number = 14000
+): Promise<{ code: number | null; stdout: string; stderr: string; timedOut: boolean }> {
+  let lastResult: { code: number | null; stdout: string; stderr: string; timedOut: boolean } = { code: -1, stdout: '', stderr: '', timedOut: false };
+  for (const client of BOT_SHIELD_CLIENTS) {
+    const args = buildArgs(client);
+    const res = await runYtDlp(args, timeoutMs);
+    lastResult = res;
+    if (res.code === 0) {
+      return res;
+    }
+    const isBotError =
+      res.stderr.includes('bot') ||
+      res.stderr.includes('Sign in') ||
+      res.stderr.includes('429') ||
+      res.stderr.includes('Too Many Requests');
+    if (!isBotError) {
+      return res;
+    }
+    console.warn(`[BotShield] Client "${client}" encountered bot verification/429, rotating to next client profile...`);
+  }
+  return lastResult;
+}
+
+// Cobalt-Style Direct CDN URL Extraction: Resolves signed edge URLs directly from Google, Meta, ByteDance, Fastly
+async function resolveDirectCdnUrl(
+  targetUrl: string,
+  isAudioOnly: boolean,
+  quality: string = 'best'
+): Promise<{ directUrl: string | null; isRedirectable: boolean }> {
+  if (!HAS_YTDLP || !/^https?:\/\//i.test(targetUrl)) {
+    return { directUrl: null, isRedirectable: false };
+  }
+
+  // Fast direct stream check (e.g. mp4, mp3, webm directly hosted)
+  if (/\.(mp4|webm|mov|m4v|mp3|m4a|wav|flac)(\?.*)?$/i.test(targetUrl)) {
+    return { directUrl: targetUrl, isRedirectable: true };
+  }
+
+  const selector = isAudioOnly
+    ? 'ba[protocol^=http]/ba/b'
+    : quality === 'best' || quality === 'auto'
+    ? 'b[protocol^=http]/best[protocol^=http]/best'
+    : `b[height<=${parseQualityHeight(quality) || 720}][protocol^=http]/b[height<=${parseQualityHeight(quality) || 720}]/best[protocol^=http]/best`;
+
+  try {
+    const result = await runYtDlpWithShield((client) => {
+      const args = [
+        '--no-playlist',
+        '--no-warnings',
+        '-g',
+        '--extractor-args', `youtube:player_client=${client}`,
+        '-f', selector,
+      ];
+      if (fs.existsSync(COOKIES_FILE)) args.push('--cookies', COOKIES_FILE);
+      args.push(targetUrl);
+      return args;
+    }, 20000);
+
+    if (result.code === 0 && result.stdout.trim()) {
+      const lines = result.stdout.trim().split('\n').map((l) => l.trim()).filter((l) => /^https?:\/\//i.test(l));
+      if (lines.length === 1) {
+        return { directUrl: lines[0], isRedirectable: true };
+      }
+    }
+  } catch {}
+
+  return { directUrl: null, isRedirectable: false };
+}
+
 async function inspectUrl(targetUrl: string) {
   // 1. Check in-memory cache
   const cached = INSPECT_CACHE.get(targetUrl);
@@ -335,19 +452,21 @@ async function inspectUrl(targetUrl: string) {
 
   if (HAS_YTDLP && !isDirectMedia && /^https?:\/\//i.test(targetUrl)) {
     try {
-      const inspectArgs = [
-        '--no-warnings',
-        '--no-playlist',
-        '--skip-download',
-        '--socket-timeout', '8',
-        '--extractor-args', 'youtube:player_client=android',
-      ];
-      if (fs.existsSync(COOKIES_FILE)) inspectArgs.push('--cookies', COOKIES_FILE);
-      if (isPlaylist) {
-        inspectArgs.push('--flat-playlist', '--playlist-items', '1-25');
-      }
-      inspectArgs.push('--dump-single-json', targetUrl);
-      const { code, stdout } = await runYtDlp(inspectArgs, 12000);
+      const { code, stdout } = await runYtDlpWithShield((client) => {
+        const inspectArgs = [
+          '--no-warnings',
+          '--no-playlist',
+          '--skip-download',
+          '--socket-timeout', '8',
+          '--extractor-args', `youtube:player_client=${client}`,
+        ];
+        if (fs.existsSync(COOKIES_FILE)) inspectArgs.push('--cookies', COOKIES_FILE);
+        if (isPlaylist) {
+          inspectArgs.push('--flat-playlist', '--playlist-items', '1-25');
+        }
+        inspectArgs.push('--dump-single-json', targetUrl);
+        return inspectArgs;
+      }, 12000);
       if (code === 0 && stdout.trim()) {
         const data = JSON.parse(stdout.trim());
         if (data && data.title) {
@@ -432,6 +551,7 @@ async function executeDownloadJob(job: DownloadJob) {
   job.speed = 3400000;
   job.eta = 12;
   job.size = 48000000;
+  persistState();
 
   const opts = job.options || {};
   const isAudioOnly = Boolean(opts.audio_only);
@@ -481,128 +601,134 @@ async function executeDownloadJob(job: DownloadJob) {
       } catch {}
     }
 
-    // 2. yt-dlp extraction
+    // 2. yt-dlp extraction with Multi-Client Bot Shield (auto-rotates spoofing profiles if blocked)
     if (!downloadedDirectly && fs.existsSync(YTDLP_PATH) && /^https?:\/\//i.test(job.url)) {
-      try {
-        const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
-        const ytdlpArgs = [
-          '--ffmpeg-location', ffmpegLoc,
-          '--no-playlist',
-          '--no-warnings',
-          '--newline',
-          '--no-mtime',
-          '--concurrent-fragments', String(opts.concurrent_fragments || 8),
-          '--buffer-size', '16M',
-          '--http-chunk-size', '10M',
-          '--retries', String(opts.retries || 5),
-          '--fragment-retries', String(opts.fragment_retries || 5),
-          '--extractor-args', 'youtube:player_client=android,web',
-        ];
+      const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
+      for (const client of BOT_SHIELD_CLIENTS) {
+        if (downloadedDirectly) break;
+        try {
+          const ytdlpArgs = [
+            '--ffmpeg-location', ffmpegLoc,
+            '--no-playlist',
+            '--no-warnings',
+            '--newline',
+            '--no-mtime',
+            '--concurrent-fragments', String(opts.concurrent_fragments || 8),
+            '--buffer-size', '16M',
+            '--http-chunk-size', '10M',
+            '--retries', String(opts.retries || 5),
+            '--fragment-retries', String(opts.fragment_retries || 5),
+            '--extractor-args', `youtube:player_client=${client}`,
+          ];
 
-        if (opts.limit_rate) {
-          ytdlpArgs.push('--limit-rate', String(opts.limit_rate));
-        }
-
-        if (opts.proxy) {
-          ytdlpArgs.push('--proxy', String(opts.proxy));
-        }
-
-        if (fs.existsSync(COOKIES_FILE)) {
-          ytdlpArgs.push('--cookies', COOKIES_FILE);
-        }
-
-        if (opts.metadata_mode === 'embed' || opts.metadata_mode === 'both') {
-          ytdlpArgs.push('--embed-metadata');
-        }
-        if (opts.embed_chapters) {
-          ytdlpArgs.push('--embed-chapters');
-        }
-        if (opts.subtitle_mode === 'embed' || opts.subtitle_mode === 'both') {
-          ytdlpArgs.push('--embed-subs', '--sub-langs', opts.subtitle_languages || 'en.*,en');
-        }
-        if (opts.subtitle_mode === 'separate' || opts.subtitle_mode === 'both') {
-          ytdlpArgs.push('--write-subs', '--sub-langs', opts.subtitle_languages || 'en.*,en', '--sub-format', opts.subtitle_format || 'srt/best');
-        }
-        if (opts.thumbnail_mode === 'separate' || opts.thumbnail_mode === 'both') {
-          ytdlpArgs.push('--write-thumbnail');
-        }
-
-        if (opts.clip_start || opts.clip_end) {
-          const start = String(opts.clip_start || '00:00').trim();
-          const end = String(opts.clip_end || 'inf').trim();
-          ytdlpArgs.push('--download-sections', `*${start}-${end}`);
-        }
-
-        if (isAudioOnly) {
-          ytdlpArgs.push(
-            '-x',
-            '--audio-format', ext === 'mp3' ? 'mp3' : ext === 'flac' ? 'flac' : 'm4a',
-            '--audio-quality', opts.quality ? `${opts.quality}k` : '320k',
-            '-o', outputPath,
-            job.url
-          );
-        } else {
-          const mergeFmt = opts.merge_output_format && opts.merge_output_format !== 'auto'
-            ? String(opts.merge_output_format)
-            : 'mp4';
-          ytdlpArgs.push(
-            '-f', getFormatSelector(opts.format_id || 'best', false, mergeFmt),
-            mergeFmt === 'webm' ? '--recode-video' : '--merge-output-format',
-            mergeFmt,
-            '-o', outputPath,
-            job.url
-          );
-        }
-
-        const child = spawn(YTDLP_PATH, ytdlpArgs);
-        job.childProcess = child;
-
-        child.stdout.on('data', (d: Buffer) => {
-          const str = d.toString();
-          const matchPercent = str.match(/(\d+(?:\.\d+)?)%/);
-          if (matchPercent) {
-            job.progress = Math.min(99, Math.max(job.progress, Math.round(parseFloat(matchPercent[1]))));
+          if (opts.limit_rate) {
+            ytdlpArgs.push('--limit-rate', String(opts.limit_rate));
           }
-          const matchSpeed = str.match(/at\s+([0-9.]+[kMG]i?B\/s)/i);
-          if (matchSpeed) {
-            const raw = matchSpeed[1];
-            if (raw.includes('M')) job.speed = Math.round(parseFloat(raw) * 1048576);
-            else if (raw.includes('k')) job.speed = Math.round(parseFloat(raw) * 1024);
-          }
-          const matchEta = str.match(/ETA\s+(\d+):(\d+)/i);
-          if (matchEta) {
-            job.eta = parseInt(matchEta[1], 10) * 60 + parseInt(matchEta[2], 10);
-          }
-        });
 
-        child.stderr.on('data', (d: Buffer) => {
-          lastStderr += d.toString();
-        });
+          if (opts.proxy) {
+            ytdlpArgs.push('--proxy', String(opts.proxy));
+          }
 
-        await new Promise<void>((resolve) => {
-          let timeoutTimer: NodeJS.Timeout | null = null;
-          const cleanup = () => {
-            if (timeoutTimer) {
-              clearTimeout(timeoutTimer);
-              timeoutTimer = null;
+          if (fs.existsSync(COOKIES_FILE)) {
+            ytdlpArgs.push('--cookies', COOKIES_FILE);
+          }
+
+          if (opts.metadata_mode === 'embed' || opts.metadata_mode === 'both') {
+            ytdlpArgs.push('--embed-metadata');
+          }
+          if (opts.embed_chapters) {
+            ytdlpArgs.push('--embed-chapters');
+          }
+          if (opts.subtitle_mode === 'embed' || opts.subtitle_mode === 'both') {
+            ytdlpArgs.push('--embed-subs', '--sub-langs', opts.subtitle_languages || 'en.*,en');
+          }
+          if (opts.subtitle_mode === 'separate' || opts.subtitle_mode === 'both') {
+            ytdlpArgs.push('--write-subs', '--sub-langs', opts.subtitle_languages || 'en.*,en', '--sub-format', opts.subtitle_format || 'srt/best');
+          }
+          if (opts.thumbnail_mode === 'separate' || opts.thumbnail_mode === 'both') {
+            ytdlpArgs.push('--write-thumbnail');
+          }
+
+          if (opts.clip_start || opts.clip_end) {
+            const start = String(opts.clip_start || '00:00').trim();
+            const end = String(opts.clip_end || 'inf').trim();
+            ytdlpArgs.push('--download-sections', `*${start}-${end}`);
+          }
+
+          if (isAudioOnly) {
+            ytdlpArgs.push(
+              '-x',
+              '--audio-format', ext === 'mp3' ? 'mp3' : ext === 'flac' ? 'flac' : 'm4a',
+              '--audio-quality', opts.quality ? `${opts.quality}k` : '320k',
+              '-o', outputPath,
+              job.url
+            );
+          } else {
+            const mergeFmt = opts.merge_output_format && opts.merge_output_format !== 'auto'
+              ? String(opts.merge_output_format)
+              : 'mp4';
+            ytdlpArgs.push(
+              '-f', getFormatSelector(opts.format_id || 'best', false, mergeFmt),
+              mergeFmt === 'webm' ? '--recode-video' : '--merge-output-format',
+              mergeFmt,
+              '-o', outputPath,
+              job.url
+            );
+          }
+
+          const child = spawn(YTDLP_PATH, ytdlpArgs);
+          job.childProcess = child;
+
+          child.stdout.on('data', (d: Buffer) => {
+            const str = d.toString();
+            const matchPercent = str.match(/(\d+(?:\.\d+)?)%/);
+            if (matchPercent) {
+              job.progress = Math.min(99, Math.max(job.progress, Math.round(parseFloat(matchPercent[1]))));
             }
-            job.childProcess = undefined;
-            resolve();
-          };
-
-          child.on('close', async (code) => {
-            if (code === 0 && fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
-              downloadedDirectly = true;
+            const matchSpeed = str.match(/at\s+([0-9.]+[kMG]i?B\/s)/i);
+            if (matchSpeed) {
+              const raw = matchSpeed[1];
+              if (raw.includes('M')) job.speed = Math.round(parseFloat(raw) * 1048576);
+              else if (raw.includes('k')) job.speed = Math.round(parseFloat(raw) * 1024);
             }
-            cleanup();
+            const matchEta = str.match(/ETA\s+(\d+):(\d+)/i);
+            if (matchEta) {
+              job.eta = parseInt(matchEta[1], 10) * 60 + parseInt(matchEta[2], 10);
+            }
           });
-          child.on('error', () => cleanup());
-          timeoutTimer = setTimeout(() => {
-            try { child.kill('SIGKILL'); } catch {}
-            cleanup();
-          }, 600000);
-        });
-      } catch {}
+
+          child.stderr.on('data', (d: Buffer) => {
+            lastStderr += d.toString();
+          });
+
+          await new Promise<void>((resolve) => {
+            let timeoutTimer: NodeJS.Timeout | null = null;
+            const cleanup = () => {
+              if (timeoutTimer) {
+                clearTimeout(timeoutTimer);
+                timeoutTimer = null;
+              }
+              job.childProcess = undefined;
+              resolve();
+            };
+
+            child.on('close', async (code) => {
+              if (code === 0 && fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+                downloadedDirectly = true;
+              }
+              cleanup();
+            });
+            child.on('error', () => cleanup());
+            timeoutTimer = setTimeout(() => {
+              try { child.kill('SIGKILL'); } catch {}
+              cleanup();
+            }, 600000);
+          });
+
+          if (downloadedDirectly) break;
+          // If bot detection or rate limit encountered, loop will try next client profile
+        } catch {}
+      }
     }
 
     if (!downloadedDirectly) {
@@ -620,6 +746,7 @@ async function executeDownloadJob(job: DownloadJob) {
         const errorLine = lastStderr.split('\n').filter((l) => l.includes('ERROR:')).pop()?.replace(/^ERROR:\s*/, '');
         job.error = errorLine || 'Download failed. The media source was not accessible.';
       }
+      persistState();
       autoPruneOldFiles();
       dispatchNextJob();
       return;
@@ -649,6 +776,7 @@ async function executeDownloadJob(job: DownloadJob) {
   job.speed = null;
   job.childProcess = undefined;
 
+  persistState();
   autoPruneOldFiles();
   dispatchNextJob();
 }
@@ -833,7 +961,36 @@ async function startServer() {
     }
   });
 
-  // Direct Streaming Download API (Streams directly to device without saving to server library)
+  // Cobalt-Style Direct CDN URL Endpoint: Resolves signed edge links for instant direct download
+  app.get('/api/direct-url', async (req: Request, res: Response) => {
+    const targetUrl = String(req.query.url || '').trim();
+    if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+      return res.status(400).json({ error: 'Enter a valid URL.' });
+    }
+    const isAudioOnly = req.query.audio_only === 'true' || req.query.audio_only === '1';
+    const quality = String(req.query.format_id || 'best');
+
+    try {
+      const { directUrl, isRedirectable } = await resolveDirectCdnUrl(targetUrl, isAudioOnly, quality);
+      if (directUrl) {
+        return res.json({
+          ok: true,
+          direct_url: directUrl,
+          is_redirectable: isRedirectable,
+          mode: isAudioOnly ? 'audio' : 'video',
+        });
+      }
+      return res.json({
+        ok: false,
+        direct_url: null,
+        message: 'Direct CDN URL not progressive; server stream will be used.',
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Direct resolution failed' });
+    }
+  });
+
+  // Direct Streaming Download API (Cobalt-Style 302 Bypass with Server Fallback)
   app.get('/api/stream', async (req: Request, res: Response) => {
     const targetUrl = String(req.query.url || '').trim();
     if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
@@ -844,8 +1001,24 @@ async function startServer() {
     const quality = String(req.query.format_id || 'best');
     const incomingTitle = String(req.query.title || '').trim();
     const audioFormat = String(req.query.audio_format || 'mp3');
+    const clipStart = String(req.query.clip_start || '').trim();
+    const clipEnd = String(req.query.clip_end || '').trim();
+    const directParam = req.query.direct; // '1', '0', or undefined
 
-    // Resolve title for filename
+    // 1. Cobalt-Style Direct CDN Bypass:
+    // When no clip trimming is requested and direct download is not explicitly disabled:
+    if (!clipStart && !clipEnd && directParam !== '0') {
+      try {
+        const { directUrl, isRedirectable } = await resolveDirectCdnUrl(targetUrl, isAudioOnly, quality);
+        if (isRedirectable && directUrl) {
+          // Send 302 redirect directly to Google/TikTok/Meta CDN edge!
+          // 0 server RAM, 0 server bandwidth, 50-100 MB/s speed for the user!
+          return res.redirect(302, directUrl);
+        }
+      } catch {}
+    }
+
+    // 2. Server-side stream pipe (fallback for separate DASH streams or section clippers)
     let title = incomingTitle;
     if (!title || title === 'Media Stream') {
       try {
@@ -898,8 +1071,6 @@ async function startServer() {
       ytdlpArgs.push('--cookies', COOKIES_FILE);
     }
 
-    const clipStart = String(req.query.clip_start || '').trim();
-    const clipEnd = String(req.query.clip_end || '').trim();
     if (clipStart || clipEnd) {
       const start = clipStart || '00:00';
       const end = clipEnd || 'inf';
@@ -938,6 +1109,82 @@ async function startServer() {
         res.status(500).send('Streaming failed.');
       }
     });
+  });
+
+  // Batch & Full Playlist ZIP Downloader (Streams entire collection as a single .zip directly to device)
+  app.post('/api/batch-zip', async (req: Request, res: Response) => {
+    const { urls, audio_only = false, audio_format = 'mp3', quality = 'best' } = req.body || {};
+    if (!Array.isArray(urls) || urls.length === 0) {
+      return res.status(400).json({ error: 'Array of URLs is required.' });
+    }
+
+    const validUrls = urls
+      .map((u: any) => String(u || '').trim())
+      .filter((u: string) => /^https?:\/\//i.test(u))
+      .slice(0, 30); // Max 30 items per batch ZIP
+
+    if (validUrls.length === 0) {
+      return res.status(400).json({ error: 'No valid URLs provided.' });
+    }
+
+    const isAudio = Boolean(audio_only);
+    const ext = isAudio ? (audio_format === 'flac' ? 'flac' : audio_format === 'm4a' ? 'm4a' : 'mp3') : 'mp4';
+    const zipName = `clipstream_batch_${Date.now()}.zip`;
+
+    res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+    res.setHeader('Content-Type', 'application/zip');
+
+    const archive = archiver('zip', { zlib: { level: 1 } });
+    archive.on('error', (err: any) => {
+      console.error('[Archive Error]', err);
+      if (!res.headersSent) res.status(500).send('Archive failed');
+    });
+
+    archive.pipe(res);
+
+    const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
+
+    for (let i = 0; i < validUrls.length; i++) {
+      const itemUrl = validUrls[i];
+      let itemTitle = `item_${i + 1}`;
+      try {
+        const meta = await inspectUrl(itemUrl);
+        if (meta && meta.title) itemTitle = sanitizeFilename(meta.title);
+      } catch {}
+
+      const entryFilename = `${String(i + 1).padStart(2, '0')}_${itemTitle}.${ext}`;
+
+      await new Promise<void>((resolveItem) => {
+        const ytdlpArgs = [
+          '--ffmpeg-location', ffmpegLoc,
+          '--no-playlist',
+          '--no-warnings',
+          '--no-mtime',
+          '--concurrent-fragments', '4',
+          '--extractor-args', 'youtube:player_client=android,web',
+        ];
+        if (fs.existsSync(COOKIES_FILE)) ytdlpArgs.push('--cookies', COOKIES_FILE);
+
+        if (isAudio) {
+          ytdlpArgs.push('-f', 'ba[protocol^=http]/ba/b', '-x', '--audio-format', ext, '-o', '-', itemUrl);
+        } else {
+          ytdlpArgs.push('-f', getFormatSelector(quality, false, 'mp4'), '-o', '-', itemUrl);
+        }
+
+        const child = spawn(YTDLP_PATH, ytdlpArgs);
+        archive.append(child.stdout, { name: entryFilename });
+
+        child.on('close', () => resolveItem());
+        child.on('error', () => resolveItem());
+
+        setTimeout(() => {
+          try { child.kill('SIGKILL'); } catch {}
+          resolveItem();
+        }, 180000);
+      });
+    }
+
+    await archive.finalize();
   });
 
   // Create Download Job
@@ -1008,6 +1255,7 @@ async function startServer() {
     };
 
     JOBS.set(jobId, job);
+    persistState();
 
     // If title was not provided, fetch metadata non-blockingly in the background
     if (jobTitle === 'Media Stream') {
@@ -1015,6 +1263,7 @@ async function startServer() {
         .then((meta) => {
           if (meta && meta.title && meta.title !== 'Media Stream') {
             job.title = meta.title;
+            persistState();
           }
         })
         .catch(() => {});
@@ -1048,6 +1297,7 @@ async function startServer() {
     if (!job) return res.status(404).json({ error: 'Download job not found.' });
     job.scheduled_for = null;
     job.status = 'queued';
+    persistState();
     dispatchNextJob();
     res.json(safeJob(job));
   });
@@ -1063,6 +1313,7 @@ async function startServer() {
     }
     job.status = 'cancelled';
     JOBS.delete(String(req.params.job_id));
+    persistState();
     dispatchNextJob();
     res.json({ message: 'Job removed successfully.' });
   });

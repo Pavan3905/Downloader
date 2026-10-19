@@ -160,17 +160,50 @@ export default function App() {
     return () => window.removeEventListener('app:toast', onToast);
   }, []);
 
-  // Support PWA Web Share Target and URL query auto-population (?url=... or ?text=...)
+  // Global Keyboard Paste (Ctrl+V / Cmd+V Anywhere on the page)
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      // Don't intercept if user is purposefully typing inside settings inputs or another text area
+      const active = document.activeElement;
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+      const isMainUrlInput = active && active.getAttribute('type') === 'url';
+
+      const text = e.clipboardData?.getData('text') || '';
+      const trimmed = text.trim();
+
+      if (trimmed && /^https?:\/\//i.test(trimmed)) {
+        if (!isInput || isMainUrlInput) {
+          e.preventDefault();
+          window.dispatchEvent(
+            new CustomEvent('app:global-paste', {
+              detail: { url: trimmed, autoDownload: false },
+            })
+          );
+          showToast('Captured link from clipboard! Inspecting...');
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
+
+  // Support 1-Click Browser Bookmarklet & PWA Web Share Target (?url=...&auto=1)
   useEffect(() => {
     try {
       const searchParams = new URLSearchParams(window.location.search);
       const sharedUrl = searchParams.get('url') || searchParams.get('text');
+      const auto = searchParams.get('auto') === '1' || searchParams.get('auto') === 'true';
+
       if (sharedUrl && /^https?:\/\//i.test(sharedUrl.trim())) {
         setTimeout(() => {
-          const input = document.querySelector('input[type="url"]') as HTMLInputElement;
-          if (input) {
-            input.value = sharedUrl.trim();
-            input.dispatchEvent(new Event('input', { bubbles: true }));
+          window.dispatchEvent(
+            new CustomEvent('app:global-paste', {
+              detail: { url: sharedUrl.trim(), autoDownload: auto },
+            })
+          );
+          if (auto) {
+            showToast('Bookmarklet triggered: Starting instant download!');
           }
         }, 150);
       }

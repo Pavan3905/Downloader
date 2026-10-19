@@ -657,64 +657,6 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               </button>
             </div>
           )}
-
-          {/* Quick Sample Test Pills (When empty) */}
-          {!url && !media && !loading && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-3 px-1 text-xs animate-in fade-in">
-              <span className="text-zinc-500 text-[11px] font-medium flex items-center gap-1 mr-1">
-                <Sparkles className="w-3 h-3 text-emerald-400" />
-                <span>Quick demo:</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-                  setUrl(sample);
-                  handleInspect(sample);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-red-500/40 text-zinc-300 hover:text-red-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                <span>YouTube 4K</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = 'https://www.instagram.com/reel/C-xyz/';
-                  setUrl(sample);
-                  handleInspect(sample);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-pink-500/40 text-zinc-300 hover:text-pink-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                <span>Instagram Reel</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = 'https://www.snapchat.com/spotlight/...';
-                  setUrl(sample);
-                  handleInspect(sample);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-yellow-500/40 text-zinc-300 hover:text-yellow-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                <span>Snapchat Spotlight</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = 'https://soundcloud.com/artist/track';
-                  setUrl(sample);
-                  handleInspect(sample);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-amber-500/40 text-zinc-300 hover:text-amber-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span>SoundCloud 320k</span>
-              </button>
-            </div>
-          )}
         </div>
       ) : (
         /* Batch Multi-URL Mode */

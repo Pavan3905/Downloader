@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
 import { SettingsSheet } from './components/SettingsSheet';
 import { AdvancedSettings } from './types';
-import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles, Command } from 'lucide-react';
+import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
@@ -299,15 +299,6 @@ export default function App() {
         <section id="downloader-section" className="w-full">
           <MemoInspectPost advancedSettings={advancedSettings} />
         </section>
-
-        {/* Global Keyboard Shortcut Pill Hint */}
-        <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 select-none">
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
-            <Command className="w-3 h-3 text-zinc-500" />
-            <span>V</span>
-          </div>
-          <span>or Ctrl+V anywhere to auto-capture link</span>
-        </div>
 
         {/* Feature Highlights Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-zinc-900">

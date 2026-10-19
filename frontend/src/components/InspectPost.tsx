@@ -279,14 +279,14 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                   type="button"
                   onClick={() => handleDownload()}
                   disabled={downloading}
-                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md"
+                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md disabled:opacity-50"
                 >
                   {downloading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Download className="w-3.5 h-3.5" />
                   )}
-                  <span>Download Now</span>
+                  <span>{downloading ? 'Starting...' : 'Download to Device'}</span>
                 </button>
               </div>
             </div>

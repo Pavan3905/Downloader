@@ -99,13 +99,32 @@ export default function App() {
     }
   }, []);
 
+  const autoSaveJobIdsRef = React.useRef<Set<string>>(new Set());
+  const triggeredDownloadsRef = React.useRef<Set<string>>(new Set());
+
+  // Function to trigger direct device download
+  const triggerDeviceDownload = useCallback((filename: string) => {
+    try {
+      const link = document.createElement('a');
+      link.href = `/api/files/${encodeURIComponent(filename)}?download=1`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      }, 500);
+    } catch {}
+  }, []);
+
+  // Poll jobs queue: 500ms when active downloads exist for real-time progress & instant device download, 4s when idle
   useEffect(() => {
     fetchJobs();
     fetchFiles();
 
-    // Poll jobs queue regularly: 1.5s when active downloads exist, 5s when idle
     const hasActiveJobs = jobs.some((j) => j.status === 'downloading' || j.status === 'queued');
-    const intervalTime = hasActiveJobs ? 1500 : 5000;
+    const intervalTime = hasActiveJobs ? 500 : 4000;
 
     const interval = setInterval(() => {
       fetchJobs();
@@ -113,6 +132,23 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [fetchJobs, fetchFiles, jobs]);
+
+  // When jobs update, auto-download completed files to the user's device immediately
+  useEffect(() => {
+    for (const job of jobs) {
+      if (
+        job.status === 'completed' &&
+        job.filename &&
+        autoSaveJobIdsRef.current.has(job.id) &&
+        !triggeredDownloadsRef.current.has(job.id)
+      ) {
+        triggeredDownloadsRef.current.add(job.id);
+        autoSaveJobIdsRef.current.delete(job.id);
+        triggerDeviceDownload(job.filename);
+        showToast(`Downloading "${job.filename}" to your device!`);
+      }
+    }
+  }, [jobs, triggerDeviceDownload]);
 
   // Deep event listeners for in-app anchor links
   useEffect(() => {
@@ -153,7 +189,12 @@ export default function App() {
         throw new Error(err.error || 'Failed to start download.');
       }
 
-      showToast('Download added to queue!');
+      const createdJob = await res.json().catch(() => null);
+      if (createdJob && createdJob.id) {
+        autoSaveJobIdsRef.current.add(createdJob.id);
+      }
+
+      showToast('Download started! File will save to your device immediately.');
       await fetchJobs();
       document.getElementById('queue-section')?.scrollIntoView({ behavior: 'smooth' });
     } catch (err: any) {

@@ -7,6 +7,7 @@ import {
   Play,
   Clock,
   ArrowDownCircle,
+  Download,
   FileCheck,
 } from 'lucide-react';
 import { DownloadJob } from '../types';
@@ -213,8 +214,20 @@ export const QueueFeed: React.FC<QueueFeedProps> = ({
                     </div>
                   </div>
 
-                  {/* Quick Action Button */}
-                  <div className="shrink-0 flex items-center gap-1">
+                  {/* Action Buttons */}
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    {isCompleted && job.filename && (
+                      <a
+                        href={`/api/files/${encodeURIComponent(job.filename)}?download=1`}
+                        download={job.filename}
+                        className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-700/60"
+                        title="Save to your device immediately"
+                      >
+                        <Download className="w-3 h-3 text-emerald-400" />
+                        <span>Save to Device</span>
+                      </a>
+                    )}
+
                     {isQueued && onStartNow && (
                       <button
                         type="button"

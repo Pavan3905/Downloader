@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-black/40 backdrop-blur-xl border-b border-white/[0.06] transition-colors duration-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-[52px] flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-[52px] flex items-center justify-between">
         {/* Brand Mark (Click to scroll to top) */}
         <button
           type="button"

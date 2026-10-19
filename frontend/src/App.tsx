@@ -253,33 +253,38 @@ export default function App() {
       <main className="flex-1 max-w-4xl lg:max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
         <div
-          className="text-center pt-2 pb-2 select-none flex items-center justify-center w-full px-2"
+          className="text-center pt-4 pb-2 select-none flex items-center justify-center w-full px-2"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <h1 className="hero-headline text-[clamp(1rem,3.2vw,2rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
-            {/* 100% Static Prefix Text (Never Shifts or Re-mounts) */}
+          <h1 className="hero-headline text-[clamp(1.15rem,3.4vw,2.15rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
+            {/* 100% Static Prefix Text */}
             <span className="text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none">
               Download Any Video from&nbsp;
             </span>
 
-            {/* Dynamic Platform Rotator in a Fixed-Width Slot (Prefix Never Moves) */}
+            {/* Sized-to-Fit Platform Word with Perfect Optical Centering */}
             <span
-              className="relative inline-block text-left w-[11.5ch] platform-rotator-mask cursor-pointer group h-[1.35em] align-baseline shrink-0"
+              className="relative inline-flex items-center justify-center platform-rotator-mask cursor-pointer group h-[1.35em] align-baseline shrink-0"
               onClick={nextPlatform}
               title="Click to cycle platform"
               aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
             >
-              {/* Dynamic Hue Ambient Backlight */}
+              {/* Dynamic Hue Ambient Backlight (Centered Directly Behind Word) */}
               <span
-                className="absolute -inset-x-4 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
+                className="absolute -inset-x-6 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
                 style={{ background: currentPlatform.glow }}
               />
+
+              {/* Sizer Element: Sizes Container to Active Word */}
+              <span className="invisible select-none opacity-0 pointer-events-none font-bold whitespace-nowrap">
+                {currentPlatform.name}
+              </span>
 
               {/* Outgoing Platform (Slide Out) */}
               {prevPlatformIdx !== null && (
                 <span
-                  className={`absolute inset-0 flex items-center justify-start font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
+                  className={`absolute inset-0 flex items-center justify-center font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
                 >
                   {ROTATING_PLATFORMS[prevPlatformIdx].name}
                 </span>
@@ -287,7 +292,7 @@ export default function App() {
 
               {/* Active Platform (Slide In) */}
               <span
-                className={`absolute inset-0 flex items-center justify-start ${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
+                className={`absolute inset-0 flex items-center justify-center ${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
               >
                 {currentPlatform.name}
               </span>
@@ -301,43 +306,55 @@ export default function App() {
         </section>
 
         {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-zinc-900">
-          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-              <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Direct Edge CDN Stream</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-6 border-t border-white/[0.06]">
+          {/* Card 1: Edge CDN */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+                <Zap className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Direct Edge CDN Stream</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
               Downloads resolve signed Google & edge CDN links in ~300ms, streaming straight to your browser at 50-100 MB/s.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-              <ShieldCheck className="w-4 h-4 text-sky-400 shrink-0" />
-              <span>100% Client-Side Private</span>
+          {/* Card 2: 100% Private */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <span className="text-sm font-semibold text-zinc-100 tracking-tight">100% Client-Side Private</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
               No server database, no file retention, and no bandwidth logging. Every byte flows directly to your device storage.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-              <Scissors className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Visual Section Trimmer</span>
+          {/* Card 3: Visual Section Trimmer */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+                <Scissors className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Visual Section Trimmer</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
               Interactive timeline scrubber lets you clip custom highlights and export only the required seconds losslessly.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-              <Archive className="w-4 h-4 text-orange-400 shrink-0" />
-              <span>Streamed Batch ZIP Engine</span>
+          {/* Card 4: Streamed Batch ZIP Engine */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-105 transition-transform">
+                <Archive className="w-4 h-4 stroke-[2.2]" />
+              </div>
+              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Streamed Batch ZIP Engine</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
               Paste multiple URLs or choose entire playlist tracks. Downloads are compressed on the fly into a single `.zip` file.
             </p>
           </div>
@@ -346,7 +363,7 @@ export default function App() {
 
       {/* Aesthetic Minimal Footer */}
       <footer className="w-full border-t border-white/[0.06] mt-auto py-7 px-4 sm:px-6 select-none z-10 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           {/* Left: Brand & Engine Live Dot */}
           <div className="flex items-center gap-2.5">
             <div className="w-5 h-5 rounded-md bg-zinc-900 border border-white/10 flex items-center justify-center text-emerald-400">

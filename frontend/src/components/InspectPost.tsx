@@ -358,6 +358,16 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         accent: 'text-pink-400',
       };
     }
+    if (rawUrl.includes('snapchat.com') || ext.includes('snapchat')) {
+      return {
+        name: 'Snapchat',
+        badge: 'Spotlight & Stories',
+        bg: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+        dot: 'bg-yellow-400',
+        cardBorder: 'border-yellow-500/30 shadow-[0_0_50px_-15px_rgba(234,179,8,0.2)]',
+        accent: 'text-yellow-400',
+      };
+    }
     if (rawUrl.includes('tiktok.com') || ext.includes('tiktok')) {
       return {
         name: 'TikTok',
@@ -549,6 +559,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 <Video className="w-4 h-4 text-red-500" />
               ) : platform?.name === 'Instagram' ? (
                 <Video className="w-4 h-4 text-pink-500" />
+              ) : platform?.name === 'Snapchat' ? (
+                <Zap className="w-4 h-4 text-yellow-400" />
               ) : platform?.name === 'TikTok' ? (
                 <Music className="w-4 h-4 text-cyan-400" />
               ) : platform?.name === 'SoundCloud' ? (
@@ -567,7 +579,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                   setMedia(null);
                 }
               }}
-              placeholder="Paste any YouTube, Instagram, TikTok, or video link..."
+              placeholder="Paste any YouTube, Instagram, Snapchat, TikTok, or video link..."
               className="w-full h-14 pl-3.5 pr-32 bg-transparent text-sm sm:text-base text-zinc-100 placeholder-zinc-500 focus:outline-none"
             />
 
@@ -676,6 +688,18 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
                 <span>Instagram Reel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = 'https://www.snapchat.com/spotlight/...';
+                  setUrl(sample);
+                  handleInspect(sample);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-yellow-500/40 text-zinc-300 hover:text-yellow-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                <span>Snapchat Spotlight</span>
               </button>
               <button
                 type="button"

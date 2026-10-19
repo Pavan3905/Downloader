@@ -8,19 +8,83 @@ import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles, Command } fr
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
 
-// Supported Platforms Catalog
-const SUPPORTED_PLATFORMS = [
-  { name: 'YouTube', badge: '4K / 60fps', color: 'hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-300', dot: 'bg-red-500' },
-  { name: 'Instagram', badge: 'Reels 1080p', color: 'hover:border-pink-500/40 hover:bg-pink-500/5 hover:text-pink-300', dot: 'bg-pink-500' },
-  { name: 'TikTok', badge: 'HD No Watermark', color: 'hover:border-cyan-500/40 hover:bg-cyan-500/5 hover:text-cyan-300', dot: 'bg-cyan-400' },
-  { name: 'X / Twitter', badge: 'Edge MP4', color: 'hover:border-slate-500/40 hover:bg-slate-500/5 hover:text-slate-200', dot: 'bg-slate-400' },
-  { name: 'SoundCloud', badge: '320kbps MP3', color: 'hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-300', dot: 'bg-amber-400' },
-  { name: 'Reddit', badge: 'Merged Audio', color: 'hover:border-orange-500/40 hover:bg-orange-500/5 hover:text-orange-300', dot: 'bg-orange-500' },
+// Supported & Rotating Platforms Catalog (with brand gradients and active glows)
+const ROTATING_PLATFORMS = [
+  {
+    name: 'YouTube',
+    badge: '4K Ultra HD',
+    gradient: 'from-red-500 via-rose-500 to-amber-500',
+    color: 'hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300',
+    activeClass: 'border-red-500/60 bg-red-500/15 text-red-300 shadow-[0_0_18px_rgba(239,68,68,0.3)] ring-1 ring-red-500/40',
+    dot: 'bg-red-500',
+  },
+  {
+    name: 'Instagram',
+    badge: 'Reels 1080p',
+    gradient: 'from-pink-500 via-purple-500 to-rose-400',
+    color: 'hover:border-pink-500/40 hover:bg-pink-500/10 hover:text-pink-300',
+    activeClass: 'border-pink-500/60 bg-pink-500/15 text-pink-300 shadow-[0_0_18px_rgba(236,72,153,0.3)] ring-1 ring-pink-500/40',
+    dot: 'bg-pink-500',
+  },
+  {
+    name: 'Snapchat',
+    badge: 'Spotlight & Stories',
+    gradient: 'from-yellow-400 via-amber-400 to-orange-400',
+    color: 'hover:border-yellow-500/40 hover:bg-yellow-500/10 hover:text-yellow-300',
+    activeClass: 'border-yellow-500/60 bg-yellow-500/15 text-yellow-300 shadow-[0_0_18px_rgba(234,179,8,0.3)] ring-1 ring-yellow-500/40',
+    dot: 'bg-yellow-400',
+  },
+  {
+    name: 'TikTok',
+    badge: 'HD (No Watermark)',
+    gradient: 'from-cyan-400 via-teal-400 to-emerald-400',
+    color: 'hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:text-cyan-300',
+    activeClass: 'border-cyan-500/60 bg-cyan-500/15 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.3)] ring-1 ring-cyan-500/40',
+    dot: 'bg-cyan-400',
+  },
+  {
+    name: 'X (Twitter)',
+    badge: 'Direct Edge MP4',
+    gradient: 'from-slate-200 via-sky-300 to-zinc-400',
+    color: 'hover:border-slate-500/40 hover:bg-slate-500/10 hover:text-slate-200',
+    activeClass: 'border-slate-400/60 bg-slate-500/15 text-slate-200 shadow-[0_0_18px_rgba(148,163,184,0.3)] ring-1 ring-slate-400/40',
+    dot: 'bg-slate-400',
+  },
+  {
+    name: 'SoundCloud',
+    badge: '320kbps Lossless',
+    gradient: 'from-amber-400 via-orange-500 to-rose-400',
+    color: 'hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-300',
+    activeClass: 'border-amber-500/60 bg-amber-500/15 text-amber-300 shadow-[0_0_18px_rgba(245,158,11,0.3)] ring-1 ring-amber-500/40',
+    dot: 'bg-amber-400',
+  },
+  {
+    name: 'Reddit',
+    badge: 'Merged Audio',
+    gradient: 'from-orange-500 via-red-500 to-amber-500',
+    color: 'hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300',
+    activeClass: 'border-orange-500/60 bg-orange-500/15 text-orange-300 shadow-[0_0_18px_rgba(249,115,22,0.3)] ring-1 ring-orange-500/40',
+    dot: 'bg-orange-500',
+  },
 ];
 
 export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Auto-rotating platform name in hero
+  const [platformIdx, setPlatformIdx] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setInterval(() => {
+      setPlatformIdx((prev) => (prev + 1) % ROTATING_PLATFORMS.length);
+    }, 2400);
+    return () => clearInterval(timer);
+  }, [isPaused]);
+
+  const currentPlatform = ROTATING_PLATFORMS[platformIdx];
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -155,8 +219,36 @@ export default function App() {
       {/* Main Workspace */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
-        <div className="text-center space-y-4 pt-2 sm:pt-4">
-          {/* Engine Pill Badge */}
+        <div className="text-center space-y-4 pt-1 sm:pt-3">
+          {/* 1. MOVED TO TOP: Supported Platform Switcher Bar */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 pb-1">
+            {ROTATING_PLATFORMS.map((p, idx) => {
+              const isActive = idx === platformIdx;
+              return (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => {
+                    setPlatformIdx(idx);
+                    setIsPaused(true);
+                    setTimeout(() => setIsPaused(false), 8000);
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border text-[11px] font-semibold transition-all cursor-pointer select-none active:scale-95 ${
+                    isActive
+                      ? p.activeClass
+                      : `bg-zinc-900/60 border-zinc-800/80 text-zinc-400 ${p.color}`
+                  }`}
+                  title={`Switch to ${p.name}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
+                  <span>{p.name}</span>
+                  <span className="text-[10px] opacity-60 font-mono hidden sm:inline">{p.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 2. Engine Pill Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 shadow-sm backdrop-blur-md text-xs">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -167,35 +259,23 @@ export default function App() {
             <span className="text-emerald-400 font-mono font-medium">50+ MB/s Stream</span>
           </div>
 
-          {/* Punchy Hero Headline */}
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.12]">
+          {/* 3. Headline with Dynamic Platform Name Change */}
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.18] min-h-[75px] sm:min-h-[115px] flex flex-col items-center justify-center">
             <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-              Download Any Video.
+              Download Any Video from
             </span>
-            <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              Zero Wait. Zero Limits.
+            <span
+              key={currentPlatform.name}
+              className={`bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-block animate-in fade-in slide-in-from-bottom-2 duration-300 font-black drop-shadow-sm`}
+            >
+              {currentPlatform.name}
             </span>
           </h1>
 
-          {/* Subtitle */}
+          {/* 4. Subtitle */}
           <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-            Direct client-side media resolution. Stream 4K video, audio tracks, and full playlists straight from Google & CDN edges with zero cloud storage wait.
+            Direct client-side media resolution. Stream 4K video, audio tracks, and full playlists straight from Google, Meta, Snapchat & CDN edges with zero cloud storage wait.
           </p>
-
-          {/* Supported Platforms Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-            {SUPPORTED_PLATFORMS.map((p) => (
-              <div
-                key={p.name}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 text-[11px] font-medium text-zinc-400 transition-all ${p.color}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
-                <span>{p.name}</span>
-                <span className="text-zinc-600 font-mono text-[10px] hidden sm:inline">{p.badge}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Downloader Core Section */}

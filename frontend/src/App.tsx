@@ -116,7 +116,7 @@ export default function App() {
     if (matchedIdx !== -1) {
       changePlatform(matchedIdx);
     }
-    showToast(`Targeting ${platform.name} (${platform.tag})`);
+    showToast(`Targeting ${platform.name}`);
   };
 
   const handleTrySample = (url: string) => {

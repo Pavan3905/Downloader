@@ -172,9 +172,6 @@ export const PlatformMarquee: React.FC<PlatformMarqueeProps> = ({ onSelectPlatfo
               <span className="text-xs font-medium text-zinc-300 group-hover:text-white transition-colors tracking-tight whitespace-nowrap">
                 {p.name}
               </span>
-              <span className="text-[10px] text-zinc-500 font-normal px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.04] group-hover:text-zinc-400 group-hover:border-white/[0.08] transition-colors whitespace-nowrap">
-                {p.tag}
-              </span>
             </button>
           ))}
         </div>

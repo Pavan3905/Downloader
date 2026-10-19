@@ -481,8 +481,6 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
           >
             <span className={`w-1.5 h-1.5 rounded-full ${platform.dot}`} />
             <span>{platform.name}</span>
-            <span className="opacity-50">·</span>
-            <span className="opacity-90">{platform.badge}</span>
           </div>
         ) : (
           <span className="text-[11px] text-zinc-500 font-normal hidden sm:inline select-none">

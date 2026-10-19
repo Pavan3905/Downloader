@@ -30,14 +30,10 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="brand-tile w-7 h-7 rounded-lg bg-zinc-900/90 border border-white/10 flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/30 group-hover:bg-zinc-800 transition-all duration-200 shadow-sm">
             <ArrowDownToLine className="w-3.5 h-3.5 stroke-[2.2] group-hover:translate-y-0.5 transition-transform duration-200" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <span className="text-sm font-semibold tracking-tight text-zinc-100 group-hover:text-white transition-colors font-sans">
               Downloader
             </span>
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.85)]"
-              title="Edge Engine Ready"
-            />
           </div>
         </button>
 

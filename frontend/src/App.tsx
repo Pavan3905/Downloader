@@ -245,7 +245,7 @@ export default function App() {
   return (
     <div
       className={`min-h-screen relative overflow-hidden ${
-        theme === 'light' ? 'light bg-zinc-50 text-zinc-900' : 'bg-black text-zinc-100'
+        theme === 'light' ? 'light bg-[#f8fafc] text-slate-900' : 'bg-[#09090b] text-zinc-100'
       } flex flex-col font-sans transition-colors duration-200`}
     >
       {/* Ambient Mesh Glow */}
@@ -268,7 +268,7 @@ export default function App() {
           >
             <h1 className="hero-headline text-[clamp(1.2rem,3.6vw,2.35rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
               {/* 100% Static Prefix Text */}
-              <span className="text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none">
+              <span className="hero-prefix-text text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none transition-colors">
                 Download Any Video from&nbsp;
               </span>
 

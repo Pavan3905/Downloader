@@ -449,13 +449,13 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
       {/* Top Smart Utility Row: Balanced Mode Selector and Status Hint */}
       <div className="flex items-center justify-between text-xs px-1">
         {/* Single vs Batch Mode Switcher */}
-        <div className="flex p-0.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl text-[11px] font-medium shadow-sm backdrop-blur-sm">
+        <div className="mode-switcher-container flex p-0.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl text-[11px] font-medium shadow-sm backdrop-blur-sm">
           <button
             type="button"
             onClick={() => setInputMode('single')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+            className={`mode-switcher-btn px-3 py-1 rounded-lg transition-all cursor-pointer ${
               inputMode === 'single'
-                ? 'bg-zinc-800 text-white shadow-sm font-semibold'
+                ? 'active bg-zinc-800 text-white shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -464,9 +464,9 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
           <button
             type="button"
             onClick={() => setInputMode('batch')}
-            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`mode-switcher-btn px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               inputMode === 'batch'
-                ? 'bg-zinc-800 text-white shadow-sm font-semibold'
+                ? 'active bg-zinc-800 text-white shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >

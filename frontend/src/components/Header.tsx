@@ -37,20 +37,19 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1">
-
           {/* Theme toggle */}
           {onToggleTheme && (
             <button
               type="button"
               onClick={onToggleTheme}
-              className="nav-btn w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border border-transparent hover:border-white/[0.08] active:scale-95 transition-all cursor-pointer"
+              className="theme-toggle-btn w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer select-none active:scale-95 group"
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               aria-label="Toggle color theme"
             >
               {theme === 'light' ? (
-                <Moon className="w-3.5 h-3.5" />
+                <Moon className="w-4 h-4 text-slate-700 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-300" />
               ) : (
-                <Sun className="w-3.5 h-3.5" />
+                <Sun className="w-4 h-4 text-amber-400 group-hover:scale-110 group-hover:rotate-45 transition-transform duration-300" />
               )}
             </button>
           )}

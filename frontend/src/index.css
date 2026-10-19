@@ -61,28 +61,20 @@
 
 /* Minimalist Header in Light Mode */
 .light header {
-  background-color: rgba(255, 255, 255, 0.75) !important;
-  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 .light header .brand-tile {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
   color: #059669 !important;
 }
 .light header .brand-tile:hover {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-  border-color: rgba(5, 150, 105, 0.3) !important;
-}
-.light header .nav-btn {
-  color: #71717a !important;
-}
-.light header .nav-btn:hover {
-  color: #09090b !important;
-  background-color: rgba(0, 0, 0, 0.05) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background-color: #d1fae5 !important;
+  border-color: #34d399 !important;
 }
 .light header span.text-zinc-100 {
-  color: #18181b !important;
+  color: #0f172a !important;
 }
 .light header button:hover span.text-zinc-100 {
   color: #000000 !important;
@@ -91,7 +83,8 @@
 /* Glowing Button Utility */
 .btn-emerald-glow {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #022c22;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   font-weight: 700;
   box-shadow: 0 0 24px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -106,7 +99,8 @@
 
 .btn-amber-glow {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #451a03;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   font-weight: 700;
   box-shadow: 0 0 24px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -114,6 +108,25 @@
 .btn-amber-glow:hover {
   box-shadow: 0 0 35px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
   transform: translateY(-1px);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.light .theme-toggle-btn {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+.light .theme-toggle-btn:hover {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Radiant Omnibar Input Container */
@@ -237,40 +250,59 @@
 html.light,
 html.light body,
 .light {
-  background-color: #fbfbfd !important;
-  color: #09090b !important;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
 }
 
-.light .bg-black {
-  background-color: #fbfbfd !important;
+.light .bg-black,
+.light .bg-\[\#09090b\] {
+  background-color: #f8fafc !important;
 }
 
 .light h1 span.bg-gradient-to-b {
-  background-image: linear-gradient(to bottom, #09090b, #27272a, #52525b) !important;
+  background-image: linear-gradient(to bottom, #0f172a, #1e293b, #475569) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   color: transparent !important;
 }
 
+.light .hero-prefix-text,
 .light .hero-headline span.text-white {
-  color: #09090b !important;
+  color: #0f172a !important;
   text-shadow: none !important;
 }
 
+/* Mode Switcher in Light Mode */
+.light .mode-switcher-container {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+.light .mode-switcher-btn {
+  color: #64748b !important;
+}
+.light .mode-switcher-btn:hover {
+  color: #0f172a !important;
+}
+.light .mode-switcher-btn.active {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
 .light footer {
-  border-top-color: rgba(0, 0, 0, 0.06) !important;
+  border-top-color: #e2e8f0 !important;
 }
 .light footer span {
-  color: #71717a !important;
+  color: #64748b !important;
 }
 
 .light .bg-zinc-950 {
   background-color: #ffffff !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
 }
 
 .light .bg-zinc-900 {
-  background-color: #f4f4f5 !important;
+  background-color: #f1f5f9 !important;
 }
 
 .light .bg-zinc-900\/90,
@@ -281,39 +313,86 @@ html.light body,
 }
 
 .light .bg-zinc-800 {
-  background-color: #e4e4e7 !important;
+  background-color: #e2e8f0 !important;
 }
 
 .light .text-zinc-100,
 .light .text-zinc-200 {
-  color: #18181b !important;
+  color: #0f172a !important;
 }
 
 .light .text-zinc-300,
 .light .text-zinc-400 {
-  color: #52525b !important;
+  color: #475569 !important;
 }
 
 .light .text-zinc-500 {
-  color: #71717a !important;
+  color: #64748b !important;
 }
 
 .light .border-zinc-800,
 .light .border-zinc-800\/80,
 .light .border-zinc-800\/60,
 .light .border-zinc-800\/40 {
-  border-color: #e4e4e7 !important;
+  border-color: #e2e8f0 !important;
 }
 
 .light input,
 .light select,
 .light textarea {
-  color: #18181b !important;
+  color: #0f172a !important;
 }
 
 .light input::placeholder,
 .light textarea::placeholder {
-  color: #a1a1aa !important;
+  color: #94a3b8 !important;
+}
+
+/* Glass Card & Preview elements in Light Mode */
+.light .glass-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 12px 35px -8px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.03) !important;
+}
+
+.light .glass-card div.bg-zinc-950 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light .glass-card button.bg-zinc-800 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+.light button.border-zinc-700 {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25) !important;
+}
+
+.light button.border-transparent {
+  color: #64748b !important;
+}
+.light button.border-transparent:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+.light .bg-zinc-950\/70,
+.light .bg-zinc-950\/80 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light .bg-zinc-900\/50 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+.light .bg-zinc-900\/50:hover {
+  background-color: #f1f5f9 !important;
 }
 
 /* Custom Range Slider for Timeline Scrubber */
@@ -403,20 +482,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* Light mode overrides for platform chips */
 .light .platform-chip {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
 }
 .light .platform-chip:hover {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.16) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
 }
 .light .platform-chip span.text-zinc-300 {
-  color: #18181b !important;
+  color: #0f172a !important;
 }
 .light .platform-chip span.text-zinc-500 {
-  color: #71717a !important;
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: #64748b !important;
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
 }

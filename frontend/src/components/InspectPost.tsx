@@ -445,48 +445,46 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   }, [media]);
 
   return (
-    <div id="downloader-section" className="space-y-4">
-      {/* Top Smart Utility Row: Mode Selector and Platform Badge */}
-      <div className="flex items-center justify-between text-xs px-1">
-        <div className="flex items-center gap-2">
-          {/* Single vs Batch Mode Switcher */}
-          <div className="flex p-0.5 bg-zinc-900 border border-zinc-800 rounded-lg text-[11px] font-medium">
-            <button
-              type="button"
-              onClick={() => setInputMode('single')}
-              className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${
-                inputMode === 'single'
-                  ? 'bg-zinc-800 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              Single Link
-            </button>
-            <button
-              type="button"
-              onClick={() => setInputMode('batch')}
-              className={`px-2.5 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer ${
-                inputMode === 'batch'
-                  ? 'bg-zinc-800 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Layers className="w-3 h-3 text-amber-400" />
-              <span>Batch (ZIP)</span>
-            </button>
-          </div>
-
-          {inputMode === 'single' && platform && (
-            <div
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all ${platform.bg}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${platform.dot}`} />
-              <span>{platform.name}</span>
-              <span className="opacity-50">·</span>
-              <span className="opacity-90">{platform.badge}</span>
-            </div>
-          )}
+    <div id="downloader-section" className="space-y-3.5 w-full">
+      {/* Top Smart Utility Row: Mode Selector and Platform Badge (Centered) */}
+      <div className="flex items-center justify-center gap-2.5 text-xs px-1">
+        {/* Single vs Batch Mode Switcher */}
+        <div className="flex p-0.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl text-[11px] font-medium shadow-sm backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => setInputMode('single')}
+            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+              inputMode === 'single'
+                ? 'bg-zinc-800 text-white shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Single Link
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('batch')}
+            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              inputMode === 'batch'
+                ? 'bg-zinc-800 text-white shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span>Batch (ZIP)</span>
+          </button>
         </div>
+
+        {inputMode === 'single' && platform && (
+          <div
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-medium transition-all ${platform.bg} shadow-sm animate-in fade-in`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${platform.dot}`} />
+            <span>{platform.name}</span>
+            <span className="opacity-50">·</span>
+            <span className="opacity-90">{platform.badge}</span>
+          </div>
+        )}
       </div>
 
       {/* Auto-Clipboard Detection Pill Banner */}

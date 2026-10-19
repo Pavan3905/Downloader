@@ -250,61 +250,62 @@ export default function App() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-4xl lg:max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
-        {/* Hero Section */}
-        <div
-          className="text-center pt-4 pb-2 select-none flex items-center justify-center w-full px-2"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          <h1 className="hero-headline text-[clamp(1.15rem,3.4vw,2.15rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
-            {/* 100% Static Prefix Text */}
-            <span className="text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none">
-              Download Any Video from&nbsp;
-            </span>
-
-            {/* Sized-to-Fit Platform Word with Perfect Optical Centering */}
-            <span
-              className="relative inline-flex items-center justify-center platform-rotator-mask cursor-pointer group h-[1.35em] align-baseline shrink-0"
-              onClick={nextPlatform}
-              title="Click to cycle platform"
-              aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
-            >
-              {/* Dynamic Hue Ambient Backlight (Centered Directly Behind Word) */}
-              <span
-                className="absolute -inset-x-6 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
-                style={{ background: currentPlatform.glow }}
-              />
-
-              {/* Sizer Element: Sizes Container to Active Word */}
-              <span className="invisible select-none opacity-0 pointer-events-none font-bold whitespace-nowrap">
-                {currentPlatform.name}
+      <main className="flex-1 max-w-3xl lg:max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col items-center z-10 transition-all">
+        <div className="w-full my-auto flex flex-col items-center space-y-7">
+          {/* Hero Section */}
+          <div
+            className="text-center pt-2 pb-1 select-none flex items-center justify-center w-full px-2"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            <h1 className="hero-headline text-[clamp(1.2rem,3.6vw,2.35rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
+              {/* 100% Static Prefix Text */}
+              <span className="text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none">
+                Download Any Video from&nbsp;
               </span>
 
-              {/* Outgoing Platform (Slide Out) */}
-              {prevPlatformIdx !== null && (
-                <span
-                  className={`absolute inset-0 flex items-center justify-center font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
-                >
-                  {ROTATING_PLATFORMS[prevPlatformIdx].name}
-                </span>
-              )}
-
-              {/* Active Platform (Slide In) */}
+              {/* Sized-to-Fit Platform Word with Perfect Optical Centering */}
               <span
-                className={`absolute inset-0 flex items-center justify-center ${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
+                className="relative inline-flex items-center justify-center platform-rotator-mask cursor-pointer group h-[1.35em] align-baseline shrink-0"
+                onClick={nextPlatform}
+                title="Click to cycle platform"
+                aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
               >
-                {currentPlatform.name}
+                {/* Dynamic Hue Ambient Backlight (Centered Directly Behind Word) */}
+                <span
+                  className="absolute -inset-x-6 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
+                  style={{ background: currentPlatform.glow }}
+                />
+
+                {/* Sizer Element: Sizes Container to Active Word */}
+                <span className="invisible select-none opacity-0 pointer-events-none font-bold whitespace-nowrap">
+                  {currentPlatform.name}
+                </span>
+
+                {/* Outgoing Platform (Slide Out) */}
+                {prevPlatformIdx !== null && (
+                  <span
+                    className={`absolute inset-0 flex items-center justify-center font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
+                  >
+                    {ROTATING_PLATFORMS[prevPlatformIdx].name}
+                  </span>
+                )}
+
+                {/* Active Platform (Slide In) */}
+                <span
+                  className={`absolute inset-0 flex items-center justify-center ${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
+                >
+                  {currentPlatform.name}
+                </span>
               </span>
-            </span>
-          </h1>
+            </h1>
+          </div>
+
+          {/* Downloader Core Section */}
+          <section id="downloader-section" className="w-full">
+            <MemoInspectPost advancedSettings={advancedSettings} />
+          </section>
         </div>
-
-        {/* Downloader Core Section */}
-        <section id="downloader-section" className="w-full">
-          <MemoInspectPost advancedSettings={advancedSettings} />
-        </section>
-
       </main>
 
       {/* Clean Centered Copyright Footer */}

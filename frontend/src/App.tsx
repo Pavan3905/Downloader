@@ -317,9 +317,18 @@ export default function App() {
               </svg>
             </button>
 
-            {/* Headline: Download Videos / from Anywhere */}
+            {/* Headline: Download [Videos / Audio] continuously scrolling vertically / from Anywhere */}
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight text-center leading-[1.15] select-none py-3">
-              <div className="text-slate-900 dark:text-white drop-shadow-xs">Download Videos</div>
+              <div className="flex items-center justify-center flex-wrap gap-x-2.5 sm:gap-x-3.5 text-slate-900 dark:text-white drop-shadow-xs">
+                <span>Download</span>
+                <span className="relative inline-flex flex-col h-[1.25em] overflow-hidden vertical-fade-mask text-left">
+                  <span className="inline-flex flex-col animate-vertical-roll">
+                    <span className="h-[1.25em] flex items-center text-slate-900 dark:text-white">Videos</span>
+                    <span className="h-[1.25em] flex items-center text-slate-900 dark:text-white">Audio</span>
+                    <span className="h-[1.25em] flex items-center text-slate-900 dark:text-white">Videos</span>
+                  </span>
+                </span>
+              </div>
               <div className="mt-1.5">
                 <span className="text-[#8B5CF6]">from </span>
                 <span className="bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] bg-clip-text text-transparent">

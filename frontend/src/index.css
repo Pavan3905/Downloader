@@ -574,3 +574,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
   animation: float-hero-4 5.8s ease-in-out infinite 1.5s;
 }
 
+/* Continuous Vertical Reel Animation for Hero Media Types (Videos & Audio) */
+@keyframes vertical-roll {
+  0%, 40% {
+    transform: translateY(0%);
+  }
+  48%, 90% {
+    transform: translateY(-33.333333%);
+  }
+  98%, 100% {
+    transform: translateY(-66.666667%);
+  }
+}
+
+.animate-vertical-roll {
+  animation: vertical-roll 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.vertical-fade-mask {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}

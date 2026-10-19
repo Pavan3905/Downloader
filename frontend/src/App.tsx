@@ -8,63 +8,70 @@ import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles, Command } fr
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
 
-// Supported & Rotating Platforms Catalog (with brand gradients, glow hues, and sample links)
+// Supported & Rotating Platforms Catalog (with authentic brand gradients and rich glow hues)
 const ROTATING_PLATFORMS = [
   {
     name: 'YouTube',
     badge: '4K Ultra HD',
     sampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    gradient: 'from-red-500 via-rose-500 to-amber-500',
+    gradient: 'from-[#FF0000] via-[#FF264D] to-[#FF5500]',
     dot: 'bg-red-500',
-    glow: 'radial-gradient(circle, rgba(239,68,68,0.35) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(255,0,50,0.35) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(255,0,50,0.35)]',
   },
   {
     name: 'Instagram',
     badge: 'Reels 1080p',
     sampleUrl: 'https://www.instagram.com/reel/C8Xy_sample',
-    gradient: 'from-pink-500 via-purple-500 to-rose-400',
+    gradient: 'from-[#F58529] via-[#DD2A7B] to-[#8134AF]',
     dot: 'bg-pink-500',
-    glow: 'radial-gradient(circle, rgba(236,72,153,0.35) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(221,42,123,0.35) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(221,42,123,0.35)]',
   },
   {
     name: 'Snapchat',
     badge: 'Spotlight & Stories',
     sampleUrl: 'https://www.snapchat.com/spotlight/W7_EDnXwT1gAA',
-    gradient: 'from-yellow-400 via-amber-400 to-orange-400',
+    gradient: 'from-[#FFE600] via-[#FFD000] to-[#FFAA00]',
     dot: 'bg-yellow-400',
-    glow: 'radial-gradient(circle, rgba(234,179,8,0.35) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(255,220,0,0.35) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(255,220,0,0.25)]',
   },
   {
     name: 'TikTok',
     badge: 'HD (No Watermark)',
     sampleUrl: 'https://www.tiktok.com/@tiktok/video/7106594312292453678',
-    gradient: 'from-cyan-400 via-teal-400 to-emerald-400',
+    gradient: 'from-[#00F2FE] via-[#4FACFE] to-[#00F2FE]',
     dot: 'bg-cyan-400',
-    glow: 'radial-gradient(circle, rgba(6,182,212,0.35) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(0,242,254,0.35) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(0,242,254,0.35)]',
   },
   {
     name: 'X (Twitter)',
     badge: 'Direct Edge MP4',
     sampleUrl: 'https://x.com/SpaceX/status/1649078635876352000',
-    gradient: 'from-slate-200 via-sky-300 to-zinc-400',
+    gradient: 'from-[#FFFFFF] via-[#E2E8F0] to-[#94A3B8]',
     dot: 'bg-slate-300',
-    glow: 'radial-gradient(circle, rgba(148,163,184,0.3) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(255,255,255,0.2)]',
   },
   {
     name: 'SoundCloud',
     badge: '320kbps Lossless',
     sampleUrl: 'https://soundcloud.com/octobersveryown/champagnepapi-laugh-now-cry',
-    gradient: 'from-amber-400 via-orange-500 to-rose-400',
+    gradient: 'from-[#FF5500] via-[#FF7700] to-[#FFAA00]',
     dot: 'bg-amber-400',
-    glow: 'radial-gradient(circle, rgba(245,158,11,0.35) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(255,85,0,0.35) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(255,85,0,0.35)]',
   },
   {
     name: 'Reddit',
     badge: 'Merged Audio',
     sampleUrl: 'https://www.reddit.com/r/aww/comments/12345/cute_cat/',
-    gradient: 'from-orange-500 via-red-500 to-amber-500',
+    gradient: 'from-[#FF4500] via-[#FF5722] to-[#FF7043]',
     dot: 'bg-orange-500',
-    glow: 'radial-gradient(circle, rgba(249,115,22,0.35) 0%, transparent 70%)',
+    glow: 'radial-gradient(circle, rgba(255,69,0,0.35) 0%, transparent 70%)',
+    shadow: 'drop-shadow-[0_2px_14px_rgba(255,69,0,0.35)]',
   },
 ];
 
@@ -250,15 +257,15 @@ export default function App() {
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <h1 className="text-[clamp(1.15rem,4.4vw,2.75rem)] font-black tracking-tight leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
+          <h1 className="hero-headline text-[clamp(1.25rem,4.4vw,2.85rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
             {/* Base Prefix Text */}
-            <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent shrink-0">
+            <span className="text-white drop-shadow-[0_2px_12px_rgba(255,255,255,0.08)] shrink-0">
               Download Any Video from&nbsp;
             </span>
 
-            {/* Dynamic Platform Word with Smooth Vertical Roll Transition & Hue Glow */}
+            {/* Dynamic Platform Word with Smooth Vertical Masked Slide Transition */}
             <span
-              className="relative inline-flex items-center justify-start overflow-hidden cursor-pointer group h-[1.3em] shrink-0"
+              className="relative inline-flex items-center justify-start platform-rotator-mask cursor-pointer group h-[1.35em] shrink-0"
               onClick={nextPlatform}
               title="Click to cycle platform"
               aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
@@ -269,18 +276,18 @@ export default function App() {
                 style={{ background: currentPlatform.glow }}
               />
 
-              {/* Outgoing Platform (Roll Out) */}
+              {/* Outgoing Platform (Slide Out) */}
               {prevPlatformIdx !== null && (
                 <span
-                  className={`absolute inset-0 flex items-center font-black tracking-tight bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-roll-out drop-shadow-sm whitespace-nowrap`}
+                  className={`absolute inset-0 flex items-center font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
                 >
                   {ROTATING_PLATFORMS[prevPlatformIdx].name}
                 </span>
               )}
 
-              {/* Active Platform (Roll In) */}
+              {/* Active Platform (Slide In) */}
               <span
-                className={`${prevPlatformIdx !== null ? 'platform-roll-in' : ''} font-black tracking-tight bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-flex items-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
+                className={`${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-flex items-center ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
               >
                 {currentPlatform.name}
               </span>

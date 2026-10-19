@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
+import { PlatformMarquee, PlatformItem } from './components/PlatformMarquee';
 import { AdvancedSettings } from './types';
 
 const MemoInspectPost = React.memo(InspectPost);
+const MemoPlatformMarquee = React.memo(PlatformMarquee);
 
 // Supported & Rotating Platforms Catalog (with authentic brand gradients and rich glow hues)
 const ROTATING_PLATFORMS = [
@@ -106,6 +108,16 @@ export default function App() {
   }, [isPaused, nextPlatform]);
 
   const currentPlatform = ROTATING_PLATFORMS[platformIdx];
+
+  const handleSelectPlatform = (platform: PlatformItem) => {
+    const matchedIdx = ROTATING_PLATFORMS.findIndex(
+      (p) => p.name.toLowerCase().includes(platform.name.toLowerCase().split(' ')[0])
+    );
+    if (matchedIdx !== -1) {
+      changePlatform(matchedIdx);
+    }
+    showToast(`Targeting ${platform.name} (${platform.tag})`);
+  };
 
   const handleTrySample = (url: string) => {
     window.dispatchEvent(
@@ -300,6 +312,11 @@ export default function App() {
           {/* Downloader Core Section */}
           <section id="downloader-section" className="w-full">
             <MemoInspectPost advancedSettings={advancedSettings} />
+          </section>
+
+          {/* Auto-Scrolling Supported Platforms Marquee */}
+          <section className="w-full pt-1">
+            <MemoPlatformMarquee onSelectPlatform={handleSelectPlatform} />
           </section>
         </div>
       </main>

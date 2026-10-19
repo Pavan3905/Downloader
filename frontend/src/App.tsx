@@ -74,15 +74,13 @@ export default function App() {
 
   // Auto-rotating platform name in hero
   const [platformIdx, setPlatformIdx] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    if (isPaused) return;
     const timer = setInterval(() => {
       setPlatformIdx((prev) => (prev + 1) % ROTATING_PLATFORMS.length);
     }, 2400);
     return () => clearInterval(timer);
-  }, [isPaused]);
+  }, []);
 
   const currentPlatform = ROTATING_PLATFORMS[platformIdx];
 
@@ -219,45 +217,7 @@ export default function App() {
       {/* Main Workspace */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
-        <div className="text-center space-y-4 pt-1 sm:pt-3">
-          {/* 1. MOVED TO TOP: Supported Platform Switcher Bar */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pb-1">
-            {ROTATING_PLATFORMS.map((p, idx) => {
-              const isActive = idx === platformIdx;
-              return (
-                <button
-                  key={p.name}
-                  type="button"
-                  onClick={() => {
-                    setPlatformIdx(idx);
-                    setIsPaused(true);
-                    setTimeout(() => setIsPaused(false), 8000);
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border text-[11px] font-semibold transition-all cursor-pointer select-none active:scale-95 ${
-                    isActive
-                      ? p.activeClass
-                      : `bg-zinc-900/60 border-zinc-800/80 text-zinc-400 ${p.color}`
-                  }`}
-                  title={`Switch to ${p.name}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
-                  <span>{p.name}</span>
-                  <span className="text-[10px] opacity-60 font-mono hidden sm:inline">{p.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 2. Engine Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 shadow-sm backdrop-blur-md text-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-medium text-zinc-300">Cobalt Edge Bypass Engine</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-emerald-400 font-mono font-medium">50+ MB/s Stream</span>
-          </div>
+        <div className="text-center space-y-3 pt-2 sm:pt-4">
 
           {/* 3. Headline with Dynamic Platform Name Change & Preserved Second Line */}
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.15]">

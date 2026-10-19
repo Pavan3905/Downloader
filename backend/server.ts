@@ -527,6 +527,12 @@ async function executeDownloadJob(job: DownloadJob) {
           ytdlpArgs.push('--write-thumbnail');
         }
 
+        if (opts.clip_start || opts.clip_end) {
+          const start = String(opts.clip_start || '00:00').trim();
+          const end = String(opts.clip_end || 'inf').trim();
+          ytdlpArgs.push('--download-sections', `*${start}-${end}`);
+        }
+
         if (isAudioOnly) {
           ytdlpArgs.push(
             '-x',
@@ -892,6 +898,14 @@ async function startServer() {
       ytdlpArgs.push('--cookies', COOKIES_FILE);
     }
 
+    const clipStart = String(req.query.clip_start || '').trim();
+    const clipEnd = String(req.query.clip_end || '').trim();
+    if (clipStart || clipEnd) {
+      const start = clipStart || '00:00';
+      const end = clipEnd || 'inf';
+      ytdlpArgs.push('--download-sections', `*${start}-${end}`);
+    }
+
     if (isAudioOnly) {
       ytdlpArgs.push(
         '-f', 'ba[protocol^=http]/ba/b',
@@ -944,6 +958,8 @@ async function startServer() {
       embed_chapters = true,
       filename_template = '%(title).180B [%(id)s].%(ext)s',
       merge_output_format = 'auto',
+      clip_start = '',
+      clip_end = '',
     } = req.body;
 
     if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url.trim())) {
@@ -986,6 +1002,8 @@ async function startServer() {
         embed_chapters,
         filename_template,
         merge_output_format,
+        clip_start,
+        clip_end,
       },
     };
 

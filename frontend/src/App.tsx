@@ -160,6 +160,23 @@ export default function App() {
     return () => window.removeEventListener('app:toast', onToast);
   }, []);
 
+  // Support PWA Web Share Target and URL query auto-population (?url=... or ?text=...)
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const sharedUrl = searchParams.get('url') || searchParams.get('text');
+      if (sharedUrl && /^https?:\/\//i.test(sharedUrl.trim())) {
+        setTimeout(() => {
+          const input = document.querySelector('input[type="url"]') as HTMLInputElement;
+          if (input) {
+            input.value = sharedUrl.trim();
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }, 150);
+      }
+    } catch {}
+  }, []);
+
   // Deep event listeners for in-app anchor links
   useEffect(() => {
     const onNavigate = (e: Event) => {

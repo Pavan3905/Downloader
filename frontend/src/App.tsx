@@ -268,7 +268,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`min-h-screen ${theme === 'light' ? 'light bg-neutral-50 text-neutral-900' : 'bg-black text-white'} flex flex-col font-sans selection:bg-rose-500/30 transition-colors duration-200`}>
+    <div className={`min-h-screen ${theme === 'light' ? 'light bg-zinc-50 text-zinc-900' : 'bg-black text-zinc-100'} flex flex-col font-sans selection:bg-zinc-700/30 transition-colors duration-200`}>
       {/* Top Header */}
       <Header
         theme={theme}
@@ -279,7 +279,7 @@ export default function App() {
       />
 
       {/* Main Unified Single-Screen Workspace */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 space-y-12">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-8 space-y-10">
         {/* 1. Downloader & Media Inspector Section */}
         <section id="downloader-section" className="scroll-mt-20">
           <MemoInspectPost
@@ -322,16 +322,16 @@ export default function App() {
             onClick={() => setIsSettingsOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative w-full max-w-md h-full bg-neutral-950 border-l border-neutral-800 p-6 overflow-y-auto shadow-2xl z-10 flex flex-col space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+          <div className="relative w-full max-w-md h-full bg-zinc-950 border-l border-zinc-800 p-6 overflow-y-auto shadow-2xl z-10 flex flex-col space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
               <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-rose-400" />
-                <h2 className="text-sm font-bold text-white tracking-tight">Studio Preferences</h2>
+                <Sliders className="w-3.5 h-3.5 text-zinc-400" />
+                <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Preferences</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(false)}
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors cursor-pointer"
                 aria-label="Close preferences"
               >
                 <X className="w-4 h-4" />
@@ -351,8 +351,8 @@ export default function App() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-neutral-900/95 border border-neutral-800 text-white text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-150">
-          <span className="w-1.5 h-1.5 rounded-full instagram-gradient shrink-0"></span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-3.5 py-2 rounded-full bg-zinc-900/95 border border-zinc-800 text-zinc-200 text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
           <span>{toastMessage}</span>
         </div>
       )}

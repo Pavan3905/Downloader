@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Link2,
   Sparkles,
@@ -18,6 +18,10 @@ import {
   CheckSquare,
   Square,
   Zap,
+  Play,
+  FileText,
+  SlidersHorizontal,
+  Layers,
 } from 'lucide-react';
 import { MediaInfo, AdvancedSettings } from '../types';
 
@@ -27,10 +31,13 @@ interface InspectPostProps {
 }
 
 export const InspectPost: React.FC<InspectPostProps> = () => {
+  // Input Modes: 'single' | 'batch'
+  const [inputMode, setInputMode] = useState<'single' | 'batch'>('single');
   const [url, setUrl] = useState('');
+  const [batchUrlsText, setBatchUrlsText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [downloadState, setDownloadState] = useState<'idle' | 'resolving' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaInfo | null>(null);
 
@@ -40,11 +47,16 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   const [audioFormat, setAudioFormat] = useState('mp3');
   const [container, setContainer] = useState<'auto' | 'mp4' | 'mkv' | 'webm'>('auto');
   const [showOptions, setShowOptions] = useState(false);
+  const [showMatrix, setShowMatrix] = useState(false);
   const [pasted, setPasted] = useState(false);
 
-  // Video Section Clipper / Trimmer
-  const [clipStart, setClipStart] = useState('');
-  const [clipEnd, setClipEnd] = useState('');
+  // In-App Preview Player
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Visual Timeline Clipper / Trimmer
+  const [showClipper, setShowClipper] = useState(false);
+  const [clipStartSec, setClipStartSec] = useState<number>(0);
+  const [clipEndSec, setClipEndSec] = useState<number>(0);
 
   // Auto clipboard detection
   const [detectedClipboardUrl, setDetectedClipboardUrl] = useState<string | null>(null);
@@ -55,6 +67,19 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   // Playlist batch selection
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
   const [showPlaylistItems, setShowPlaylistItems] = useState(false);
+
+  const totalDuration = media?.duration || 180;
+
+  // Initialize trimmer bounds when media is loaded
+  useEffect(() => {
+    if (media?.duration) {
+      setClipStartSec(0);
+      setClipEndSec(media.duration);
+    } else {
+      setClipStartSec(0);
+      setClipEndSec(180);
+    }
+  }, [media]);
 
   // Auto-select all playlist entries on inspection
   useEffect(() => {
@@ -116,6 +141,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
 
       setLoading(true);
       setError(null);
+      setIsPreviewOpen(false);
 
       try {
         const res = await fetch('/api/inspect', {
@@ -140,16 +166,23 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
     [url]
   );
 
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   const handleDownload = useCallback(
-    (isAudioOverride?: boolean) => {
+    (isAudioOverride?: boolean, qualityOverride?: string) => {
       const targetUrl = media ? media.webpage_url : url.trim();
       if (!targetUrl) return;
 
       const isAudio = isAudioOverride !== undefined ? isAudioOverride : mode === 'audio';
-      const selectedFormat = isAudio ? 'best' : quality;
+      const selectedFormat = qualityOverride || (isAudio ? 'best' : quality);
       const mediaTitle = media?.title || '';
 
-      // Direct Cobalt-Style CDN bypass stream to device
+      setDownloadState('resolving');
+
       const params = new URLSearchParams({
         url: targetUrl,
         title: mediaTitle,
@@ -158,8 +191,11 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         audio_format: audioFormat,
       });
 
-      if (clipStart.trim()) params.append('clip_start', clipStart.trim());
-      if (clipEnd.trim()) params.append('clip_end', clipEnd.trim());
+      // Apply section clipper if configured
+      if (showClipper && (clipStartSec > 0 || (media?.duration && clipEndSec < media.duration))) {
+        params.append('clip_start', formatSeconds(clipStartSec));
+        params.append('clip_end', formatSeconds(clipEndSec));
+      }
 
       const streamUrl = `/api/stream?${params.toString()}`;
 
@@ -168,11 +204,14 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
       link.setAttribute('download', '');
       document.body.appendChild(link);
       link.click();
+
       setTimeout(() => {
         if (link.parentNode) {
           link.parentNode.removeChild(link);
         }
-      }, 1000);
+        setDownloadState('sent');
+        setTimeout(() => setDownloadState('idle'), 2500);
+      }, 900);
 
       window.dispatchEvent(
         new CustomEvent('app:toast', {
@@ -180,7 +219,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         })
       );
     },
-    [media, url, mode, quality, audioFormat, clipStart, clipEnd]
+    [media, url, mode, quality, audioFormat, showClipper, clipStartSec, clipEndSec]
   );
 
   // Global Keyboard Paste & 1-Click Bookmarklet Listener
@@ -190,6 +229,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
       const { url: newUrl, autoDownload } = customEvent.detail || {};
       if (newUrl && /^https?:\/\//i.test(newUrl)) {
         setUrl(newUrl);
+        setInputMode('single');
         handleInspect(newUrl).then(() => {
           if (autoDownload) {
             setTimeout(() => {
@@ -204,9 +244,11 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   }, [handleInspect, handleDownload]);
 
   // Playlist & Batch ZIP Downloader (1-Click ZIP Stream)
-  const handleBatchZipDownload = async () => {
+  const handleBatchZipDownload = async (customUrls?: string[]) => {
     const urlsToDownload =
-      selectedEntries.length > 0
+      customUrls && customUrls.length > 0
+        ? customUrls
+        : selectedEntries.length > 0
         ? selectedEntries
         : media?.entries && media.entries.length > 0
         ? media.entries.map((e) => e.url)
@@ -263,13 +305,27 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
     }
   };
 
+  // Parse multi-line URLs in Batch Input Mode
+  const parsedBatchUrls = useMemo(() => {
+    return batchUrlsText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => /^https?:\/\//i.test(l));
+  }, [batchUrlsText]);
 
-
-  const formatDuration = (seconds?: number | null) => {
-    if (!seconds) return '0:00';
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  // Subtitle 1-Click Extractor
+  const handleDownloadSubtitle = (sub: { lang: string; ext: string; url?: string }) => {
+    if (sub.url) {
+      const link = document.createElement('a');
+      link.href = `/api/proxy?url=${encodeURIComponent(sub.url)}`;
+      link.download = `${(media?.title || 'subtitle').replace(/[^a-zA-Z0-9_-]/g, '_')}_${sub.lang}.${sub.ext}`;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => link.remove(), 1000);
+      window.dispatchEvent(new CustomEvent('app:toast', { detail: `Downloaded ${sub.lang.toUpperCase()} subtitles!` }));
+    } else {
+      window.dispatchEvent(new CustomEvent('app:toast', { detail: `Subtitle stream URL unavailable` }));
+    }
   };
 
   // Smart Platform Detection Badge
@@ -346,17 +402,59 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
 
   const platform = getPlatformDetails();
 
-  // Bookmarklet javascript code for 1-click downloads
+  // Distinct Video Streams for Format Matrix
+  const distinctFormats = useMemo(() => {
+    if (!media?.formats || media.formats.length === 0) return [];
+    const seen = new Set<string>();
+    return media.formats
+      .filter((f) => {
+        if (!f.height && f.vcodec === 'none') return false;
+        const key = `${f.height || 'audio'}_${f.vcodec}_${f.ext}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => (b.height || 0) - (a.height || 0))
+      .slice(0, 8);
+  }, [media]);
+
   const bookmarkletHref = `javascript:(function(){var u=window.location.href;window.open('${
     typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
   }/?url='+encodeURIComponent(u)+'&auto=1','_blank');})();`;
 
   return (
     <div id="downloader-section" className="space-y-4">
-      {/* Top Smart Utility Row: Platform Badge & 1-Click Bookmarklet Trigger */}
+      {/* Top Smart Utility Row: Mode Selector, Platform Badge, and Bookmarklet Trigger */}
       <div className="flex items-center justify-between text-xs px-1">
         <div className="flex items-center gap-2">
-          {platform ? (
+          {/* Single vs Batch Mode Switcher */}
+          <div className="flex p-0.5 bg-zinc-900 border border-zinc-800 rounded-lg text-[11px] font-medium">
+            <button
+              type="button"
+              onClick={() => setInputMode('single')}
+              className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${
+                inputMode === 'single'
+                  ? 'bg-zinc-800 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Single Link
+            </button>
+            <button
+              type="button"
+              onClick={() => setInputMode('batch')}
+              className={`px-2.5 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer ${
+                inputMode === 'batch'
+                  ? 'bg-zinc-800 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Layers className="w-3 h-3 text-amber-400" />
+              <span>Batch (ZIP)</span>
+            </button>
+          </div>
+
+          {inputMode === 'single' && platform && (
             <div
               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-all ${platform.bg}`}
             >
@@ -365,11 +463,6 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               <span className="opacity-50">·</span>
               <span className="opacity-90">{platform.badge}</span>
             </div>
-          ) : (
-            <span className="text-zinc-500 text-[11px] flex items-center gap-1">
-              <Zap className="w-3 h-3 text-emerald-400" />
-              <span>Press <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px]">Ctrl+V</kbd> anywhere to paste</span>
-            </span>
           )}
         </div>
 
@@ -380,12 +473,13 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
           title="1-Click Browser Bookmarklet"
         >
           <Bookmark className="w-3 h-3 text-amber-400" />
-          <span>1-Click Bookmarklet</span>
+          <span className="hidden sm:inline">1-Click Bookmarklet</span>
+          <span className="sm:hidden">Bookmarklet</span>
         </button>
       </div>
 
       {/* Auto-Clipboard Detection Pill Banner */}
-      {detectedClipboardUrl && (
+      {inputMode === 'single' && detectedClipboardUrl && (
         <div className="p-2.5 rounded-xl bg-zinc-900/90 border border-emerald-500/30 text-xs flex items-center justify-between shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-1">
           <div className="flex items-center gap-2 truncate pr-2">
             <ClipboardPaste className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -418,90 +512,145 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         </div>
       )}
 
-      {/* Hero Input Area */}
-      <div className="relative">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleInspect();
-          }}
-          className="relative flex items-center bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-xl transition-all focus-within:border-zinc-600 focus-within:ring-2 focus-within:ring-zinc-700/30"
-        >
-          <div className="pl-4 text-zinc-500">
-            <Link2 className="w-4 h-4" />
-          </div>
-
-          <input
-            type="url"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              if (media && e.target.value !== media.webpage_url) {
-                setMedia(null);
-              }
+      {/* Input Area: Single Link Mode vs Batch Mode */}
+      {inputMode === 'single' ? (
+        <div className="relative">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleInspect();
             }}
-            placeholder="Paste any YouTube, Instagram, TikTok, or video link..."
-            className="w-full h-13 pl-3 pr-28 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
-          />
+            className="relative flex items-center bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-xl transition-all focus-within:border-zinc-600 focus-within:ring-2 focus-within:ring-zinc-700/30 backdrop-blur-md"
+          >
+            <div className="pl-4 text-zinc-500">
+              <Link2 className="w-4 h-4" />
+            </div>
 
-          <div className="absolute right-2 flex items-center gap-1.5">
-            {!url && (
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (media && e.target.value !== media.webpage_url) {
+                  setMedia(null);
+                }
+              }}
+              placeholder="Paste any YouTube, Instagram, TikTok, or video link..."
+              className="w-full h-13 pl-3 pr-28 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
+            />
+
+            <div className="absolute right-2 flex items-center gap-1.5">
+              {!url && (
+                <button
+                  type="button"
+                  onClick={handlePaste}
+                  className="p-2 text-zinc-400 hover:text-zinc-200 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer text-xs flex items-center gap-1"
+                  title="Paste from clipboard"
+                >
+                  {pasted ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <ClipboardPaste className="w-3.5 h-3.5" />
+                  )}
+                  <span className="text-[11px] font-medium hidden sm:inline">Paste</span>
+                </button>
+              )}
+
+              {url && (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="h-9 px-3.5 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-sm"
+                >
+                  {loading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  <span>Inspect</span>
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Quick Instant Action Buttons (When URL is pasted but not yet inspected) */}
+          {url && !media && !loading && (
+            <div className="flex items-center justify-end gap-2 mt-2.5 px-1 animate-in fade-in duration-200">
               <button
                 type="button"
-                onClick={handlePaste}
-                className="p-2 text-zinc-400 hover:text-zinc-200 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer text-xs flex items-center gap-1"
-                title="Paste from clipboard"
+                onClick={() => handleDownload(false)}
+                className="text-xs font-medium px-3 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
               >
-                {pasted ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <ClipboardPaste className="w-3.5 h-3.5" />
-                )}
-                <span className="text-[11px] font-medium hidden sm:inline">Paste</span>
+                <Video className="w-3.5 h-3.5 text-sky-400" />
+                <span>Instant Video</span>
               </button>
-            )}
-
-            {url && (
               <button
-                type="submit"
-                disabled={loading}
-                className="h-9 px-3.5 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-sm"
+                type="button"
+                onClick={() => handleDownload(true)}
+                className="text-xs font-medium px-3 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
               >
-                {loading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
-                )}
-                <span>Inspect</span>
+                <Music className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Instant Audio</span>
               </button>
-            )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Batch Multi-URL Mode */
+        <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-4 shadow-xl space-y-3 backdrop-blur-md animate-in fade-in">
+          <div className="flex items-center justify-between text-xs text-zinc-400">
+            <span className="font-medium text-zinc-200">Paste Multiple Links (1 per line):</span>
+            <span className="font-mono text-[11px] text-amber-400">
+              {parsedBatchUrls.length} valid links found
+            </span>
           </div>
-        </form>
 
-        {/* Quick Instant Action Buttons (When URL is pasted but not yet inspected) */}
-        {url && !media && !loading && (
-          <div className="flex items-center justify-end gap-2 mt-2.5 px-1 animate-in fade-in duration-200">
+          <textarea
+            value={batchUrlsText}
+            onChange={(e) => setBatchUrlsText(e.target.value)}
+            rows={4}
+            placeholder={`https://www.youtube.com/watch?v=...\nhttps://www.instagram.com/reel/...\nhttps://www.tiktok.com/@user/video/...`}
+            className="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600 resize-none"
+          />
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setMode('video')}
+                className={`px-2.5 py-1 rounded-lg font-medium text-xs cursor-pointer ${
+                  mode === 'video' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Video (.MP4)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('audio')}
+                className={`px-2.5 py-1 rounded-lg font-medium text-xs cursor-pointer ${
+                  mode === 'audio' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Audio (.MP3)
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => handleDownload(false)}
-              disabled={downloading}
-              className="text-xs font-medium px-3 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+              onClick={() => handleBatchZipDownload(parsedBatchUrls)}
+              disabled={downloadingZip || parsedBatchUrls.length === 0}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              <Video className="w-3.5 h-3.5 text-sky-400" />
-              <span>Instant Video</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDownload(true)}
-              disabled={downloading}
-              className="text-xs font-medium px-3 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Music className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Instant Audio</span>
+              {downloadingZip ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Archive className="w-3.5 h-3.5" />
+              )}
+              <span>Download All as .ZIP</span>
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Error Alert */}
       {error && (
@@ -558,26 +707,58 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
       )}
 
       {/* Clean Inspected Media Preview Card */}
-      {media && (
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
+      {inputMode === 'single' && media && (
+        <div className="bg-zinc-900/70 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Thumbnail */}
-            <div className="relative aspect-video sm:w-48 rounded-xl overflow-hidden bg-zinc-950 shrink-0 border border-zinc-800">
-              {media.thumbnail ? (
-                <img
-                  src={`/api/proxy?url=${encodeURIComponent(media.thumbnail)}`}
-                  alt={media.title}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                  <Video className="w-8 h-8" />
+            {/* Thumbnail / In-App Video Preview Player */}
+            <div className="relative aspect-video sm:w-56 rounded-xl overflow-hidden bg-zinc-950 shrink-0 border border-zinc-800 group">
+              {isPreviewOpen ? (
+                <div className="relative w-full h-full flex flex-col justify-center bg-black">
+                  <video
+                    controls
+                    autoPlay
+                    src={`/api/stream?url=${encodeURIComponent(media.webpage_url)}&direct=1`}
+                    className="w-full h-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewOpen(false)}
+                    className="absolute top-2 right-2 p-1 rounded-md bg-black/80 text-zinc-300 hover:text-white text-xs cursor-pointer shadow-md z-10"
+                    title="Close Preview"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+              ) : (
+                <>
+                  {media.thumbnail ? (
+                    <img
+                      src={`/api/proxy?url=${encodeURIComponent(media.thumbnail)}`}
+                      alt={media.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                      <Video className="w-8 h-8" />
+                    </div>
+                  )}
+
+                  {/* Play Preview Overlay Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewOpen(true)}
+                    className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                    title="Watch Preview in Browser"
+                  >
+                    <Play className="w-4 h-4 fill-white ml-0.5" />
+                  </button>
+
+                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-mono text-white">
+                    {formatSeconds(media.duration || 0)}
+                  </div>
+                </>
               )}
-              <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-mono text-white">
-                {formatDuration(media.duration)}
-              </div>
             </div>
 
             {/* Metadata Info */}
@@ -593,7 +774,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 </h2>
               </div>
 
-              {/* Mode Toggle & Direct Action */}
+              {/* Mode Toggle & Animated Download Action */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <div className="flex p-0.5 bg-zinc-950 rounded-lg border border-zinc-800 text-xs">
                   <button
@@ -623,16 +804,31 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 <button
                   type="button"
                   onClick={() => handleDownload()}
-                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md"
+                  disabled={downloadState === 'resolving'}
+                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md disabled:opacity-75"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Direct Download</span>
+                  {downloadState === 'resolving' ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-950" />
+                      <span>Resolving CDN...</span>
+                    </>
+                  ) : downloadState === 'sent' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">Sent to Device!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Direct Download</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Quick Quality Selector Pills */}
+          {/* Quick Quality Selector Pills & Utility Toggles */}
           <div className="pt-2 border-t border-zinc-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-1.5">
               <span className="text-zinc-500 text-[11px]">Quality:</span>
@@ -678,15 +874,185 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowOptions(!showOptions)}
-              className="text-[11px] text-zinc-400 hover:text-zinc-200 flex items-center gap-1 transition-colors cursor-pointer ml-auto"
-            >
-              <span>More Options</span>
-              {showOptions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
+            <div className="flex items-center gap-3 ml-auto text-[11px]">
+              {/* Toggle Timeline Scrubber */}
+              <button
+                type="button"
+                onClick={() => setShowClipper(!showClipper)}
+                className={`flex items-center gap-1 transition-colors cursor-pointer ${
+                  showClipper ? 'text-amber-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Scissors className="w-3 h-3" />
+                <span>Trimmer</span>
+              </button>
+
+              {/* Toggle Format Matrix */}
+              <button
+                type="button"
+                onClick={() => setShowMatrix(!showMatrix)}
+                className={`flex items-center gap-1 transition-colors cursor-pointer ${
+                  showMatrix ? 'text-sky-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <SlidersHorizontal className="w-3 h-3" />
+                <span>Formats Table</span>
+              </button>
+
+              {/* More Options */}
+              <button
+                type="button"
+                onClick={() => setShowOptions(!showOptions)}
+                className="text-zinc-400 hover:text-zinc-200 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>Options</span>
+                {showOptions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
+
+          {/* Visual Interactive Timeline Scrubber */}
+          {showClipper && (
+            <div className="p-3 bg-zinc-950/70 border border-amber-500/20 rounded-xl space-y-2 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span>Interactive Section Trimmer:</span>
+                </div>
+                <div className="font-mono text-[11px] text-zinc-300">
+                  {formatSeconds(clipStartSec)} — {formatSeconds(clipEndSec)} (
+                  {formatSeconds(Math.max(0, clipEndSec - clipStartSec))})
+                </div>
+              </div>
+
+              {/* Dual Range Controls */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-500 font-mono w-10">Start:</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={totalDuration}
+                    value={clipStartSec}
+                    onChange={(e) => {
+                      const val = Math.min(Number(e.target.value), clipEndSec - 1);
+                      setClipStartSec(val);
+                    }}
+                    className="w-full"
+                  />
+                  <span className="font-mono text-[11px] text-zinc-300 w-12 text-right">
+                    {formatSeconds(clipStartSec)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-500 font-mono w-10">End:</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={totalDuration}
+                    value={clipEndSec}
+                    onChange={(e) => {
+                      const val = Math.max(Number(e.target.value), clipStartSec + 1);
+                      setClipEndSec(val);
+                    }}
+                    className="w-full"
+                  />
+                  <span className="font-mono text-[11px] text-zinc-300 w-12 text-right">
+                    {formatSeconds(clipEndSec)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClipStartSec(0);
+                    setClipEndSec(totalDuration);
+                  }}
+                  className="text-[10px] text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                >
+                  Reset Full Duration
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Transparent Format & Codec Breakdown Matrix */}
+          {showMatrix && (
+            <div className="p-3 bg-zinc-950/70 border border-zinc-800 rounded-xl space-y-2.5 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between text-xs pb-1 border-b border-zinc-800/60">
+                <span className="font-medium text-zinc-300 flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3 h-3 text-sky-400" />
+                  <span>Available Streams & Codec Matrix:</span>
+                </span>
+                <span className="text-[10px] text-zinc-500">1-Click Direct Download</span>
+              </div>
+
+              <div className="space-y-1.5 text-xs">
+                {distinctFormats.map((f, i) => {
+                  const sizeMB = f.filesize ? `${(f.filesize / 1048576).toFixed(1)} MB` : null;
+                  return (
+                    <div
+                      key={f.id || i}
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/40 hover:bg-zinc-900 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-zinc-200">
+                          {f.height ? `${f.height}p` : 'Audio'}
+                        </span>
+                        {f.fps && (
+                          <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] font-mono text-zinc-400">
+                            {f.fps}fps
+                          </span>
+                        )}
+                        <span className="text-[11px] text-zinc-500 font-mono">
+                          {f.vcodec !== 'none' ? f.vcodec.split('.')[0] : f.acodec || f.ext}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        {sizeMB && (
+                          <span className="font-mono text-[11px] text-zinc-400">~{sizeMB}</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(false, f.id)}
+                          className="px-2.5 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium transition-colors cursor-pointer"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Subtitles & Closed Captions Extractor */}
+          {media.subtitles && media.subtitles.length > 0 && (
+            <div className="pt-2 border-t border-zinc-800/60 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-zinc-500 text-[11px] flex items-center gap-1">
+                <FileText className="w-3 h-3 text-emerald-400" />
+                <span>Subtitles (.VTT):</span>
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {media.subtitles.slice(0, 6).map((sub) => (
+                  <button
+                    key={sub.lang}
+                    type="button"
+                    onClick={() => handleDownloadSubtitle(sub)}
+                    className="px-2 py-0.5 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 text-[10px] uppercase font-mono transition-colors cursor-pointer"
+                    title={`Download ${sub.name} subtitles`}
+                  >
+                    {sub.lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Full Playlist & Batch ZIP Panel */}
           {media.entries && media.entries.length > 0 && (
@@ -716,7 +1082,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
 
                   <button
                     type="button"
-                    onClick={handleBatchZipDownload}
+                    onClick={() => handleBatchZipDownload()}
                     disabled={downloadingZip || selectedEntries.length === 0}
                     className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                   >
@@ -760,7 +1126,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                         <span className="truncate flex-1 font-medium text-[11px]">{item.title}</span>
                         {item.duration && (
                           <span className="text-[10px] font-mono text-zinc-500 shrink-0">
-                            {formatDuration(item.duration)}
+                            {formatSeconds(item.duration)}
                           </span>
                         )}
                       </div>
@@ -799,45 +1165,6 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                   <ExternalLink className="w-3 h-3 shrink-0" />
                   <span className="truncate">Open Origin</span>
                 </a>
-              </div>
-
-              {/* Video Section Clipper / Trimmer */}
-              <div className="col-span-1 sm:col-span-3 pt-3 border-t border-zinc-800/40 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 text-zinc-300 text-xs font-medium">
-                  <Scissors className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Clip / Trim Range:</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <input
-                    type="text"
-                    value={clipStart}
-                    onChange={(e) => setClipStart(e.target.value)}
-                    placeholder="Start (00:00)"
-                    className="w-24 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-zinc-700"
-                    title="Clip start timestamp (e.g. 00:15 or 1:30)"
-                  />
-                  <span className="text-zinc-600">to</span>
-                  <input
-                    type="text"
-                    value={clipEnd}
-                    onChange={(e) => setClipEnd(e.target.value)}
-                    placeholder="End (01:30)"
-                    className="w-24 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-zinc-700"
-                    title="Clip end timestamp (e.g. 02:45)"
-                  />
-                  {(clipStart || clipEnd) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setClipStart('');
-                        setClipEnd('');
-                      }}
-                      className="text-[11px] text-zinc-500 hover:text-zinc-300 ml-1 cursor-pointer"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           )}

@@ -128,10 +128,13 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen ${
+      className={`min-h-screen relative overflow-hidden ${
         theme === 'light' ? 'light bg-zinc-50 text-zinc-900' : 'bg-black text-zinc-100'
-      } flex flex-col font-sans selection:bg-zinc-700/30 transition-colors duration-200`}
+      } flex flex-col font-sans transition-colors duration-200`}
     >
+      {/* Ambient Mesh Glow */}
+      <div className="ambient-glow" />
+
       {/* Top Header */}
       <Header
         theme={theme}

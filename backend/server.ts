@@ -506,7 +506,7 @@ async function inspectUrl(targetUrl: string) {
         if (data.subtitles && typeof data.subtitles === 'object') {
           for (const [lang, tracks] of Object.entries<any[]>(data.subtitles)) {
             if (Array.isArray(tracks) && tracks.length) {
-              realSubtitles.push({ lang, name: lang, ext: tracks[0]?.ext || 'vtt' });
+              realSubtitles.push({ lang, name: lang, ext: tracks[0]?.ext || 'vtt', url: tracks[0]?.url || '' });
             }
           }
         }

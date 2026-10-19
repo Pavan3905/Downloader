@@ -29,6 +29,7 @@ export interface SubtitleTrack {
   lang: string;
   name: string;
   ext: string;
+  url?: string;
 }
 
 export interface MediaInfo {

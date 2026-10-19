@@ -22,6 +22,10 @@ import {
   FileText,
   SlidersHorizontal,
   Layers,
+  Copy,
+  CheckCheck,
+  Volume2,
+  RefreshCw,
 } from 'lucide-react';
 import { MediaInfo, AdvancedSettings } from '../types';
 
@@ -63,6 +67,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
 
   // Bookmarklet modal
   const [showBookmarkletModal, setShowBookmarkletModal] = useState(false);
+  const [copiedBookmarkletCode, setCopiedBookmarkletCode] = useState(false);
 
   // Playlist batch selection
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
@@ -328,7 +333,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
     }
   };
 
-  // Smart Platform Detection Badge
+  // Smart Platform Detection Badge & Theming
   const getPlatformDetails = () => {
     const rawUrl = (url || media?.webpage_url || '').toLowerCase();
     const ext = (media?.extractor || '').toLowerCase();
@@ -339,6 +344,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: '4K Ultra HD',
         bg: 'bg-red-500/10 text-red-400 border-red-500/20',
         dot: 'bg-red-500',
+        cardBorder: 'border-red-500/30 shadow-[0_0_50px_-15px_rgba(239,68,68,0.2)]',
+        accent: 'text-red-400',
       };
     }
     if (rawUrl.includes('instagram.com') || ext.includes('instagram')) {
@@ -347,6 +354,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: 'Reels 1080p HD',
         bg: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
         dot: 'bg-pink-500',
+        cardBorder: 'border-pink-500/30 shadow-[0_0_50px_-15px_rgba(236,72,153,0.2)]',
+        accent: 'text-pink-400',
       };
     }
     if (rawUrl.includes('tiktok.com') || ext.includes('tiktok')) {
@@ -355,6 +364,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: 'HD (No Watermark)',
         bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
         dot: 'bg-cyan-400',
+        cardBorder: 'border-cyan-500/30 shadow-[0_0_50px_-15px_rgba(6,182,212,0.2)]',
+        accent: 'text-cyan-400',
       };
     }
     if (rawUrl.includes('twitter.com') || rawUrl.includes('x.com') || ext.includes('twitter')) {
@@ -363,6 +374,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: 'Direct Edge MP4',
         bg: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
         dot: 'bg-slate-300',
+        cardBorder: 'border-slate-500/30 shadow-[0_0_50px_-15px_rgba(148,163,184,0.2)]',
+        accent: 'text-slate-300',
       };
     }
     if (rawUrl.includes('soundcloud.com') || ext.includes('soundcloud')) {
@@ -371,6 +384,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: '320kbps Lossless',
         bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
         dot: 'bg-amber-400',
+        cardBorder: 'border-amber-500/30 shadow-[0_0_50px_-15px_rgba(245,158,11,0.2)]',
+        accent: 'text-amber-400',
       };
     }
     if (rawUrl.includes('reddit.com') || rawUrl.includes('v.redd.it') || ext.includes('reddit')) {
@@ -379,6 +394,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: 'Merged Audio+Video',
         bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
         dot: 'bg-orange-500',
+        cardBorder: 'border-orange-500/30 shadow-[0_0_50px_-15px_rgba(249,115,22,0.2)]',
+        accent: 'text-orange-400',
       };
     }
     if (rawUrl.includes('vimeo.com') || ext.includes('vimeo')) {
@@ -387,6 +404,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: 'Full 1080p 60fps',
         bg: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
         dot: 'bg-blue-400',
+        cardBorder: 'border-blue-500/30 shadow-[0_0_50px_-15px_rgba(59,130,246,0.2)]',
+        accent: 'text-blue-400',
       };
     }
     if (/^https?:\/\//i.test(rawUrl)) {
@@ -395,6 +414,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         badge: 'Edge Stream Bypass',
         bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
         dot: 'bg-emerald-400',
+        cardBorder: 'border-emerald-500/30 shadow-[0_0_50px_-15px_rgba(16,185,129,0.2)]',
+        accent: 'text-emerald-400',
       };
     }
     return null;
@@ -520,10 +541,21 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               e.preventDefault();
               handleInspect();
             }}
-            className="relative flex items-center bg-zinc-900/90 border border-zinc-800/80 rounded-2xl shadow-xl transition-all focus-within:border-zinc-600 focus-within:ring-2 focus-within:ring-zinc-700/30 backdrop-blur-md"
+            className="relative flex items-center omnibar-glow rounded-2xl transition-all"
           >
-            <div className="pl-4 text-zinc-500">
-              <Link2 className="w-4 h-4" />
+            {/* Dynamic Platform / Link Icon */}
+            <div className="pl-4 text-zinc-400 shrink-0">
+              {platform?.name === 'YouTube' ? (
+                <Video className="w-4 h-4 text-red-500" />
+              ) : platform?.name === 'Instagram' ? (
+                <Video className="w-4 h-4 text-pink-500" />
+              ) : platform?.name === 'TikTok' ? (
+                <Music className="w-4 h-4 text-cyan-400" />
+              ) : platform?.name === 'SoundCloud' ? (
+                <Volume2 className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Link2 className="w-4 h-4 text-emerald-400" />
+              )}
             </div>
 
             <input
@@ -536,31 +568,49 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 }
               }}
               placeholder="Paste any YouTube, Instagram, TikTok, or video link..."
-              className="w-full h-13 pl-3 pr-28 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
+              className="w-full h-14 pl-3.5 pr-32 bg-transparent text-sm sm:text-base text-zinc-100 placeholder-zinc-500 focus:outline-none"
             />
 
-            <div className="absolute right-2 flex items-center gap-1.5">
+            <div className="absolute right-2.5 flex items-center gap-1.5">
+              {/* Clear button when URL is typed */}
+              {url && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUrl('');
+                    setMedia(null);
+                  }}
+                  className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Clear input"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {/* Paste button when empty */}
               {!url && (
                 <button
                   type="button"
                   onClick={handlePaste}
-                  className="p-2 text-zinc-400 hover:text-zinc-200 rounded-xl hover:bg-zinc-800 transition-colors cursor-pointer text-xs flex items-center gap-1"
+                  className="h-9 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                   title="Paste from clipboard"
                 >
                   {pasted ? (
                     <Check className="w-3.5 h-3.5 text-emerald-400" />
                   ) : (
-                    <ClipboardPaste className="w-3.5 h-3.5" />
+                    <ClipboardPaste className="w-3.5 h-3.5 text-zinc-400" />
                   )}
                   <span className="text-[11px] font-medium hidden sm:inline">Paste</span>
+                  <span className="text-[10px] text-zinc-500 font-mono hidden md:inline">⌘V</span>
                 </button>
               )}
 
+              {/* Inspect Action */}
               {url && (
                 <button
                   type="submit"
                   disabled={loading}
-                  className="h-9 px-3.5 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-sm"
+                  className="h-9 px-3.5 rounded-xl btn-emerald-glow text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-md"
                 >
                   {loading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -568,6 +618,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                     <Sparkles className="w-3.5 h-3.5" />
                   )}
                   <span>Inspect</span>
+                  <kbd className="hidden sm:inline font-mono text-[10px] opacity-75 bg-black/20 px-1 py-0.2 rounded">↵</kbd>
                 </button>
               )}
             </div>
@@ -579,7 +630,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               <button
                 type="button"
                 onClick={() => handleDownload(false)}
-                className="text-xs font-medium px-3 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                className="text-xs font-medium px-3.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
               >
                 <Video className="w-3.5 h-3.5 text-sky-400" />
                 <span>Instant Video</span>
@@ -587,21 +638,70 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               <button
                 type="button"
                 onClick={() => handleDownload(true)}
-                className="text-xs font-medium px-3 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                className="text-xs font-medium px-3.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
               >
                 <Music className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Instant Audio</span>
               </button>
             </div>
           )}
+
+          {/* Quick Sample Test Pills (When empty) */}
+          {!url && !media && !loading && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-3 px-1 text-xs animate-in fade-in">
+              <span className="text-zinc-500 text-[11px] font-medium flex items-center gap-1 mr-1">
+                <Sparkles className="w-3 h-3 text-emerald-400" />
+                <span>Quick demo:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+                  setUrl(sample);
+                  handleInspect(sample);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-red-500/40 text-zinc-300 hover:text-red-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <span>YouTube 4K</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = 'https://www.instagram.com/reel/C-xyz/';
+                  setUrl(sample);
+                  handleInspect(sample);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-pink-500/40 text-zinc-300 hover:text-pink-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+                <span>Instagram Reel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = 'https://soundcloud.com/artist/track';
+                  setUrl(sample);
+                  handleInspect(sample);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800/80 hover:border-amber-500/40 text-zinc-300 hover:text-amber-300 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                <span>SoundCloud 320k</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         /* Batch Multi-URL Mode */
-        <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-4 shadow-xl space-y-3 backdrop-blur-md animate-in fade-in">
-          <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="font-medium text-zinc-200">Paste Multiple Links (1 per line):</span>
-            <span className="font-mono text-[11px] text-amber-400">
-              {parsedBatchUrls.length} valid links found
+        <div className="glass-card rounded-2xl p-4 sm:p-5 shadow-2xl space-y-3.5 backdrop-blur-md animate-in fade-in">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-400" />
+              <span className="font-semibold text-zinc-200">Batch Link Processor</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-[11px] font-semibold">
+              {parsedBatchUrls.length} links ready
             </span>
           </div>
 
@@ -610,28 +710,30 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
             onChange={(e) => setBatchUrlsText(e.target.value)}
             rows={4}
             placeholder={`https://www.youtube.com/watch?v=...\nhttps://www.instagram.com/reel/...\nhttps://www.tiktok.com/@user/video/...`}
-            className="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600 resize-none"
+            className="w-full p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 resize-none leading-relaxed"
           />
 
           <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex p-0.5 bg-zinc-950 rounded-xl border border-zinc-800 text-xs">
               <button
                 type="button"
                 onClick={() => setMode('video')}
-                className={`px-2.5 py-1 rounded-lg font-medium text-xs cursor-pointer ${
-                  mode === 'video' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  mode === 'video' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                Video (.MP4)
+                <Video className="w-3.5 h-3.5 text-sky-400" />
+                <span>Video (.MP4)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setMode('audio')}
-                className={`px-2.5 py-1 rounded-lg font-medium text-xs cursor-pointer ${
-                  mode === 'audio' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  mode === 'audio' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                Audio (.MP3)
+                <Music className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Audio (.MP3)</span>
               </button>
             </div>
 
@@ -639,14 +741,14 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               type="button"
               onClick={() => handleBatchZipDownload(parsedBatchUrls)}
               disabled={downloadingZip || parsedBatchUrls.length === 0}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+              className="btn-amber-glow px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 disabled:opacity-50"
             >
               {downloadingZip ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Archive className="w-3.5 h-3.5" />
+                <Archive className="w-4 h-4" />
               )}
-              <span>Download All as .ZIP</span>
+              <span>Stream All as .ZIP</span>
             </button>
           </div>
         </div>
@@ -667,7 +769,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
 
       {/* 1-Click Bookmarklet Modal */}
       {showBookmarkletModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
           <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
               <div className="flex items-center gap-2">
@@ -688,30 +790,59 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
               Instagram, TikTok, or Reddit, click the bookmark to trigger an instant download!
             </p>
 
-            <div className="flex items-center justify-center py-4 bg-zinc-950 rounded-xl border border-zinc-800">
+            <div className="flex flex-col items-center justify-center py-5 bg-zinc-950 rounded-xl border border-zinc-800/80 space-y-3">
               <a
                 href={bookmarkletHref}
                 onClick={(e) => e.preventDefault()}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-zinc-950 font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 cursor-grab transition-all"
+                className="px-5 py-2.5 rounded-xl btn-amber-glow text-xs shadow-lg hover:brightness-110 active:scale-95 cursor-grab transition-all"
                 title="Drag this button to your bookmarks bar"
               >
                 ★ Clipstream Instant
               </a>
+              <span className="text-[11px] text-zinc-500">
+                (Click and drag to Bookmarks bar)
+              </span>
             </div>
 
-            <p className="text-[11px] text-zinc-500 text-center">
-              (Drag and drop onto your browser's bookmarks bar)
-            </p>
+            {/* Manual Copy Snippet Fallback */}
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60 text-xs">
+              <span className="text-[11px] text-zinc-500">Can't drag? Copy JavaScript:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(bookmarkletHref);
+                  setCopiedBookmarkletCode(true);
+                  setTimeout(() => setCopiedBookmarkletCode(false), 2000);
+                }}
+                className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {copiedBookmarkletCode ? (
+                  <>
+                    <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Snippet</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Clean Inspected Media Preview Card */}
       {inputMode === 'single' && media && (
-        <div className="bg-zinc-900/70 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
+        <div
+          className={`glass-card rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+            platform?.cardBorder || 'border-zinc-800'
+          }`}
+        >
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Thumbnail / In-App Video Preview Player */}
-            <div className="relative aspect-video sm:w-56 rounded-xl overflow-hidden bg-zinc-950 shrink-0 border border-zinc-800 group">
+            <div className="relative aspect-video sm:w-56 rounded-xl overflow-hidden bg-zinc-950 shrink-0 border border-zinc-800 group shadow-md">
               {isPreviewOpen ? (
                 <div className="relative w-full h-full flex flex-col justify-center bg-black">
                   <video
@@ -723,7 +854,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                   <button
                     type="button"
                     onClick={() => setIsPreviewOpen(false)}
-                    className="absolute top-2 right-2 p-1 rounded-md bg-black/80 text-zinc-300 hover:text-white text-xs cursor-pointer shadow-md z-10"
+                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/80 text-zinc-300 hover:text-white text-xs cursor-pointer shadow-md z-10"
                     title="Close Preview"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -744,17 +875,23 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                     </div>
                   )}
 
+                  {/* Platform Corner Tag */}
+                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-semibold text-white border border-white/10 flex items-center gap-1.5 shadow-sm">
+                    <span className={`w-1.5 h-1.5 rounded-full ${platform?.dot || 'bg-emerald-400'}`} />
+                    <span>{platform?.name || 'Media'}</span>
+                  </div>
+
                   {/* Play Preview Overlay Button */}
                   <button
                     type="button"
                     onClick={() => setIsPreviewOpen(true)}
-                    className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                    className="absolute inset-0 m-auto w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xl transition-all hover:scale-110 active:scale-95 cursor-pointer"
                     title="Watch Preview in Browser"
                   >
                     <Play className="w-4 h-4 fill-white ml-0.5" />
                   </button>
 
-                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-mono text-white">
+                  <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-mono text-white border border-white/10">
                     {formatSeconds(media.duration || 0)}
                   </div>
                 </>
@@ -765,39 +902,41 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
             <div className="flex-1 min-w-0 flex flex-col justify-between space-y-2">
               <div>
                 <div className="flex items-center gap-2 text-xs text-zinc-400">
-                  <span className="font-medium text-zinc-300 capitalize">{media.extractor}</span>
+                  <span className="font-semibold text-zinc-300 capitalize">{media.extractor}</span>
                   <span>·</span>
-                  <span className="truncate">{media.uploader}</span>
+                  <span className="truncate text-zinc-400 font-medium">{media.uploader}</span>
                 </div>
-                <h2 className="text-sm font-semibold text-zinc-100 leading-snug line-clamp-2 mt-1">
+                <h2 className="text-sm sm:text-base font-bold text-zinc-100 leading-snug line-clamp-2 mt-1">
                   {media.title}
                 </h2>
               </div>
 
               {/* Mode Toggle & Animated Download Action */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <div className="flex p-0.5 bg-zinc-950 rounded-lg border border-zinc-800 text-xs">
+                <div className="flex p-0.5 bg-zinc-950 rounded-xl border border-zinc-800 text-xs">
                   <button
                     type="button"
                     onClick={() => setMode('video')}
-                    className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                       mode === 'video'
                         ? 'bg-zinc-800 text-white shadow-sm'
                         : 'text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    Video
+                    <Video className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Video</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setMode('audio')}
-                    className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                       mode === 'audio'
                         ? 'bg-zinc-800 text-white shadow-sm'
                         : 'text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    Audio
+                    <Music className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Audio</span>
                   </button>
                 </div>
 
@@ -805,22 +944,29 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                   type="button"
                   onClick={() => handleDownload()}
                   disabled={downloadState === 'resolving'}
-                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md disabled:opacity-75"
+                  className={`ml-auto px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 cursor-pointer shadow-lg disabled:opacity-75 ${
+                    mode === 'video' ? 'btn-emerald-glow' : 'btn-amber-glow'
+                  }`}
                 >
                   {downloadState === 'resolving' ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-950" />
-                      <span>Resolving CDN...</span>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Resolving Fast CDN...</span>
                     </>
                   ) : downloadState === 'sent' ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-700">Sent to Device!</span>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>Saved to Device!</span>
+                    </>
+                  ) : mode === 'video' ? (
+                    <>
+                      <Download className="w-4 h-4 stroke-[2.5]" />
+                      <span>Download Video</span>
                     </>
                   ) : (
                     <>
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Direct Download</span>
+                      <Music className="w-4 h-4 stroke-[2.5]" />
+                      <span>Download MP3</span>
                     </>
                   )}
                 </button>
@@ -964,7 +1110,31 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-1">
+              <div className="flex items-center justify-between pt-2 border-t border-zinc-900 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-zinc-500 font-medium">Quick presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClipStartSec(0);
+                      setClipEndSec(Math.min(30, totalDuration));
+                    }}
+                    className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 hover:border-amber-500/40 text-[10px] text-zinc-300 hover:text-amber-300 transition-colors cursor-pointer"
+                  >
+                    0:00 - 0:30 (Shorts)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClipStartSec(0);
+                      setClipEndSec(Math.min(60, totalDuration));
+                    }}
+                    className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 hover:border-amber-500/40 text-[10px] text-zinc-300 hover:text-amber-300 transition-colors cursor-pointer"
+                  >
+                    0:00 - 1:00
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {

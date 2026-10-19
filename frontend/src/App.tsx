@@ -3,10 +3,20 @@ import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
 import { SettingsSheet } from './components/SettingsSheet';
 import { AdvancedSettings } from './types';
-import { Sliders, X } from 'lucide-react';
+import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles, Command } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
+
+// Supported Platforms Catalog
+const SUPPORTED_PLATFORMS = [
+  { name: 'YouTube', badge: '4K / 60fps', color: 'hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-300', dot: 'bg-red-500' },
+  { name: 'Instagram', badge: 'Reels 1080p', color: 'hover:border-pink-500/40 hover:bg-pink-500/5 hover:text-pink-300', dot: 'bg-pink-500' },
+  { name: 'TikTok', badge: 'HD No Watermark', color: 'hover:border-cyan-500/40 hover:bg-cyan-500/5 hover:text-cyan-300', dot: 'bg-cyan-400' },
+  { name: 'X / Twitter', badge: 'Edge MP4', color: 'hover:border-slate-500/40 hover:bg-slate-500/5 hover:text-slate-200', dot: 'bg-slate-400' },
+  { name: 'SoundCloud', badge: '320kbps MP3', color: 'hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-300', dot: 'bg-amber-400' },
+  { name: 'Reddit', badge: 'Merged Audio', color: 'hover:border-orange-500/40 hover:bg-orange-500/5 hover:text-orange-300', dot: 'bg-orange-500' },
+];
 
 export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -142,11 +152,113 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      {/* Main Minimalist Workspace */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
-        <section id="downloader-section">
+      {/* Main Workspace */}
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
+        {/* Hero Section */}
+        <div className="text-center space-y-4 pt-2 sm:pt-4">
+          {/* Engine Pill Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 shadow-sm backdrop-blur-md text-xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="font-medium text-zinc-300">Cobalt Edge Bypass Engine</span>
+            <span className="text-zinc-600">·</span>
+            <span className="text-emerald-400 font-mono font-medium">50+ MB/s Stream</span>
+          </div>
+
+          {/* Punchy Hero Headline */}
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.12]">
+            <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+              Download Any Video.
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+              Zero Wait. Zero Limits.
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
+            Direct client-side media resolution. Stream 4K video, audio tracks, and full playlists straight from Google & CDN edges with zero cloud storage wait.
+          </p>
+
+          {/* Supported Platforms Strip */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+            {SUPPORTED_PLATFORMS.map((p) => (
+              <div
+                key={p.name}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 text-[11px] font-medium text-zinc-400 transition-all ${p.color}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
+                <span>{p.name}</span>
+                <span className="text-zinc-600 font-mono text-[10px] hidden sm:inline">{p.badge}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Downloader Core Section */}
+        <section id="downloader-section" className="w-full">
           <MemoInspectPost advancedSettings={advancedSettings} />
         </section>
+
+        {/* Global Keyboard Shortcut Pill Hint */}
+        <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 select-none">
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
+            <Command className="w-3 h-3 text-zinc-500" />
+            <span>V</span>
+          </div>
+          <span>or Ctrl+V anywhere to auto-capture link</span>
+        </div>
+
+        {/* Feature Highlights Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-zinc-900">
+          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+              <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Direct Edge CDN Stream</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Downloads resolve signed Google & edge CDN links in ~300ms, streaming straight to your browser at 50-100 MB/s.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+              <ShieldCheck className="w-4 h-4 text-sky-400 shrink-0" />
+              <span>100% Client-Side Private</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              No server database, no file retention, and no bandwidth logging. Every byte flows directly to your device storage.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+              <Scissors className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Visual Section Trimmer</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Interactive timeline scrubber lets you clip custom highlights and export only the required seconds losslessly.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-sm space-y-1.5 hover:border-zinc-700/60 transition-colors">
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
+              <Archive className="w-4 h-4 text-orange-400 shrink-0" />
+              <span>Streamed Batch ZIP Engine</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Paste multiple URLs or choose entire playlist tracks. Downloads are compressed on the fly into a single `.zip` file.
+            </p>
+          </div>
+        </div>
+
+        {/* Minimal Footer */}
+        <footer className="text-center pt-4 pb-2 text-[11px] text-zinc-600">
+          <span>Clipstream Next-Gen Engine · Ultra-fast, client-side, zero server limits.</span>
+        </footer>
       </main>
 
       {/* Settings Slide-Over Drawer Modal */}

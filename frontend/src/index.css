@@ -10,7 +10,7 @@
     color-scheme: light;
   }
   body {
-    background-color: #09090b;
+    background-color: #070709;
     color: #f4f4f5;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -19,7 +19,7 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
   body.light {
-    background-color: #fafafa;
+    background-color: #fbfbfd;
     color: #09090b;
   }
   code, pre, .font-mono {
@@ -30,35 +30,116 @@
 /* Ambient Radial Mesh Glow */
 .ambient-glow {
   position: fixed;
-  top: 0;
+  top: -100px;
   left: 50%;
   transform: translateX(-50%);
   width: 100vw;
-  max-width: 1100px;
-  height: 460px;
-  background: radial-gradient(ellipse 65% 55% at 50% 0%, rgba(99, 102, 241, 0.14), rgba(16, 185, 129, 0.06), transparent 75%);
+  max-width: 1200px;
+  height: 600px;
+  background: radial-gradient(ellipse 65% 50% at 50% 20%, rgba(16, 185, 129, 0.12), rgba(99, 102, 241, 0.08), transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
 .light .ambient-glow {
-  background: radial-gradient(ellipse 65% 55% at 50% 0%, rgba(99, 102, 241, 0.07), rgba(16, 185, 129, 0.03), transparent 70%);
+  background: radial-gradient(ellipse 65% 50% at 50% 20%, rgba(16, 185, 129, 0.06), rgba(99, 102, 241, 0.04), transparent 65%);
+}
+
+/* Glass Card & Borders */
+.glass-card {
+  background: rgba(18, 18, 23, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+}
+
+/* Glowing Button Utility */
+.btn-emerald-glow {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #022c22;
+  font-weight: 700;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-emerald-glow:hover {
+  box-shadow: 0 0 35px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+.btn-emerald-glow:active {
+  transform: scale(0.97);
+}
+
+.btn-amber-glow {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #451a03;
+  font-weight: 700;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-amber-glow:hover {
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Radiant Omnibar Input Container */
+.omnibar-glow {
+  background: rgba(18, 18, 23, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.omnibar-glow:focus-within {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 30px -5px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+
+.light .omnibar-glow {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08);
+}
+.light .omnibar-glow:focus-within {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08), 0 0 25px -5px rgba(16, 185, 129, 0.2);
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg, #94a3b8 0%, #ffffff 50%, #94a3b8 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
 }
 
 /* Light Mode Overrides */
 html.light,
 html.light body,
 .light {
-  background-color: #fafafa !important;
+  background-color: #fbfbfd !important;
   color: #09090b !important;
 }
 
 .light .bg-black {
-  background-color: #fafafa !important;
+  background-color: #fbfbfd !important;
 }
 
 .light .bg-zinc-950 {
   background-color: #ffffff !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
 }
 
 .light .bg-zinc-900 {
@@ -67,6 +148,7 @@ html.light body,
 
 .light .bg-zinc-900\/90,
 .light .bg-zinc-900\/80,
+.light .bg-zinc-900\/70,
 .light .bg-zinc-900\/60 {
   background-color: rgba(255, 255, 255, 0.95) !important;
 }

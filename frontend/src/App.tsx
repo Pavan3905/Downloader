@@ -11,7 +11,6 @@ const MemoPlatformMarquee = React.memo(PlatformMarquee);
 const ROTATING_PLATFORMS = [
   {
     name: 'YouTube',
-    badge: '4K Ultra HD',
     sampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     gradient: 'from-[#FF0000] via-[#FF264D] to-[#FF5500]',
     dot: 'bg-red-500',
@@ -20,7 +19,6 @@ const ROTATING_PLATFORMS = [
   },
   {
     name: 'Instagram',
-    badge: 'Reels 1080p',
     sampleUrl: 'https://www.instagram.com/reel/C8Xy_sample',
     gradient: 'from-[#F58529] via-[#DD2A7B] to-[#8134AF]',
     dot: 'bg-pink-500',
@@ -29,7 +27,6 @@ const ROTATING_PLATFORMS = [
   },
   {
     name: 'Snapchat',
-    badge: 'Spotlight & Stories',
     sampleUrl: 'https://www.snapchat.com/spotlight/W7_EDnXwT1gAA',
     gradient: 'from-[#FFE600] via-[#FFD000] to-[#FFAA00]',
     dot: 'bg-yellow-400',
@@ -38,7 +35,6 @@ const ROTATING_PLATFORMS = [
   },
   {
     name: 'TikTok',
-    badge: 'HD (No Watermark)',
     sampleUrl: 'https://www.tiktok.com/@tiktok/video/7106594312292453678',
     gradient: 'from-[#00F2FE] via-[#4FACFE] to-[#00F2FE]',
     dot: 'bg-cyan-400',
@@ -47,7 +43,6 @@ const ROTATING_PLATFORMS = [
   },
   {
     name: 'X (Twitter)',
-    badge: 'Direct Edge MP4',
     sampleUrl: 'https://x.com/SpaceX/status/1649078635876352000',
     gradient: 'from-[#FFFFFF] via-[#E2E8F0] to-[#94A3B8]',
     dot: 'bg-slate-300',
@@ -56,7 +51,6 @@ const ROTATING_PLATFORMS = [
   },
   {
     name: 'SoundCloud',
-    badge: '320kbps Lossless',
     sampleUrl: 'https://soundcloud.com/octobersveryown/champagnepapi-laugh-now-cry',
     gradient: 'from-[#FF5500] via-[#FF7700] to-[#FFAA00]',
     dot: 'bg-amber-400',
@@ -65,7 +59,6 @@ const ROTATING_PLATFORMS = [
   },
   {
     name: 'Reddit',
-    badge: 'Merged Audio',
     sampleUrl: 'https://www.reddit.com/r/aww/comments/12345/cute_cat/',
     gradient: 'from-[#FF4500] via-[#FF5722] to-[#FF7043]',
     dot: 'bg-orange-500',

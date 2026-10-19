@@ -1019,11 +1019,13 @@ async function startServer() {
     // When no clip trimming is requested and direct download is not explicitly disabled:
     if (!clipStart && !clipEnd && directParam !== '0') {
       try {
-        const { directUrl, isRedirectable } = await resolveDirectCdnUrl(targetUrl, isAudioOnly, quality);
-        if (isRedirectable && directUrl) {
-          // Send 302 redirect directly to Google/TikTok/Meta CDN edge!
-          // 0 server RAM, 0 server bandwidth, 50-100 MB/s speed for the user!
-          return res.redirect(302, directUrl);
+        const needsTranscode = isAudioOnly && (audioFormat === 'mp3' || audioFormat === 'flac' || audioFormat === 'wav');
+        if (!needsTranscode) {
+          const { directUrl, isRedirectable } = await resolveDirectCdnUrl(targetUrl, isAudioOnly, quality);
+          if (isRedirectable && directUrl) {
+            // Send 302 redirect directly to Google/TikTok/Meta CDN edge!
+            return res.redirect(302, directUrl);
+          }
         }
       } catch {}
     }
@@ -1038,7 +1040,7 @@ async function startServer() {
     }
     const cleanTitle = sanitizeFilename(title || 'media_download');
     const ext = isAudioOnly
-      ? (audioFormat === 'flac' ? 'flac' : audioFormat === 'm4a' ? 'm4a' : 'mp3')
+      ? (audioFormat === 'flac' ? 'flac' : audioFormat === 'm4a' ? 'm4a' : audioFormat === 'wav' ? 'wav' : audioFormat === 'opus' ? 'opus' : 'mp3')
       : 'mp4';
     const filename = `${cleanTitle}.${ext}`;
     const asciiName = filename.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '');
@@ -1047,7 +1049,12 @@ async function startServer() {
       'Content-Disposition',
       `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(filename)}`
     );
-    res.setHeader('Content-Type', isAudioOnly ? 'audio/mpeg' : 'video/mp4');
+    res.setHeader(
+      'Content-Type',
+      isAudioOnly
+        ? (ext === 'flac' ? 'audio/flac' : ext === 'm4a' ? 'audio/mp4' : ext === 'wav' ? 'audio/wav' : ext === 'opus' ? 'audio/opus' : 'audio/mpeg')
+        : 'video/mp4'
+    );
 
     // Check direct media stream
     if (/\.(mp4|webm|mov|m4v|mp3|m4a|wav|flac)(\?.*)?$/i.test(targetUrl)) {
@@ -1088,10 +1095,27 @@ async function startServer() {
     }
 
     if (isAudioOnly) {
+      const audioSelector = (quality && !quality.includes('p') && quality !== 'best' && quality !== 'auto' && /^\d+$/.test(quality))
+        ? `${quality}/ba[protocol^=http]/ba/b`
+        : 'ba[protocol^=http]/ba/b';
+
       ytdlpArgs.push(
-        '-f', 'ba[protocol^=http]/ba/b',
+        '-f', audioSelector,
         '-x',
-        '--audio-format', ext,
+        '--audio-format', ext
+      );
+
+      const audioBitrate = req.query.audio_quality || (quality && /\d+k?/.test(quality) ? quality : null);
+      if (audioBitrate && (ext === 'mp3' || ext === 'm4a')) {
+        const cleanBitrate = String(audioBitrate).replace(/kbps/i, 'k').replace(/[^0-9k]/gi, '');
+        if (cleanBitrate) {
+          ytdlpArgs.push('--audio-quality', cleanBitrate.endsWith('k') ? cleanBitrate : `${cleanBitrate}k`);
+        }
+      } else {
+        ytdlpArgs.push('--audio-quality', '0');
+      }
+
+      ytdlpArgs.push(
         '-o', '-',
         targetUrl
       );

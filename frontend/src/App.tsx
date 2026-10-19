@@ -101,8 +101,106 @@ const PLATFORM_PILLS = [
   },
 ];
 
+// Supported Sites Carousel catalog with authentic brand color themes (Strictly non-adult / clean)
+const HERO_SUPPORTED_SITES = [
+  {
+    name: 'YouTube',
+    gradient: 'linear-gradient(135deg, #FF0000 0%, #FF334B 50%, #CC0000 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(255, 0, 0, 0.45))',
+  },
+  {
+    name: 'Instagram',
+    gradient: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(220, 39, 67, 0.45))',
+  },
+  {
+    name: 'TikTok',
+    gradient: 'linear-gradient(90deg, #00F2FE 0%, #00d2f0 35%, #FE2C55 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(0, 242, 254, 0.45))',
+  },
+  {
+    name: 'X (Twitter)',
+    gradient: 'linear-gradient(135deg, #38BDF8 0%, #1DA1F2 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(29, 161, 242, 0.45))',
+  },
+  {
+    name: 'SoundCloud',
+    gradient: 'linear-gradient(135deg, #FF8800 0%, #FF5500 50%, #FF3300 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(255, 85, 0, 0.45))',
+  },
+  {
+    name: 'Spotify',
+    gradient: 'linear-gradient(135deg, #1ED760 0%, #1DB954 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(29, 185, 84, 0.45))',
+  },
+  {
+    name: 'Reddit',
+    gradient: 'linear-gradient(135deg, #FF6B35 0%, #FF4500 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(255, 69, 0, 0.45))',
+  },
+  {
+    name: 'Twitch',
+    gradient: 'linear-gradient(135deg, #BF94FF 0%, #9146FF 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(145, 70, 255, 0.45))',
+  },
+  {
+    name: 'Facebook',
+    gradient: 'linear-gradient(135deg, #38BDF8 0%, #1877F2 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(24, 119, 242, 0.45))',
+  },
+  {
+    name: 'Pinterest',
+    gradient: 'linear-gradient(135deg, #FF334B 0%, #BD081C 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(189, 8, 28, 0.45))',
+  },
+  {
+    name: 'Vimeo',
+    gradient: 'linear-gradient(135deg, #38BDF8 0%, #1AB7EA 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(26, 183, 234, 0.45))',
+  },
+  {
+    name: 'Bilibili',
+    gradient: 'linear-gradient(135deg, #38BDF8 0%, #00AEEC 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(0, 174, 236, 0.45))',
+  },
+  // Seamless loop clone of index 0
+  {
+    name: 'YouTube',
+    gradient: 'linear-gradient(135deg, #FF0000 0%, #FF334B 50%, #CC0000 100%)',
+    shadow: 'drop-shadow(0 0 14px rgba(255, 0, 0, 0.45))',
+  },
+];
+
 export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Supported Sites Vertical Scroll Roller State
+  const [siteIndex, setSiteIndex] = useState(0);
+  const [isSiteTransitioning, setIsSiteTransitioning] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSiteIndex((prev) => {
+        if (prev >= HERO_SUPPORTED_SITES.length - 1) {
+          return 1;
+        }
+        return prev + 1;
+      });
+      setIsSiteTransitioning(true);
+    }, 2400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (siteIndex === HERO_SUPPORTED_SITES.length - 1) {
+      const timer = setTimeout(() => {
+        setIsSiteTransitioning(false);
+        setSiteIndex(0);
+      }, 650);
+      return () => clearTimeout(timer);
+    }
+  }, [siteIndex]);
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -329,10 +427,30 @@ export default function App() {
                   </span>
                 </span>
               </div>
-              <div className="mt-1.5">
-                <span className="text-[#8B5CF6]">from </span>
-                <span className="bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] bg-clip-text text-transparent">
-                  Anywhere
+              <div className="mt-1.5 flex items-center justify-center flex-wrap gap-x-2.5 sm:gap-x-3.5 text-center">
+                <span className="text-[#8B5CF6] font-extrabold">from</span>
+                <span className="relative inline-flex flex-col h-[1.25em] overflow-hidden vertical-fade-mask text-left">
+                  <span
+                    className={`inline-flex flex-col ${
+                      isSiteTransitioning
+                        ? 'transition-transform duration-600 ease-[cubic-bezier(0.16,1,0.3,1)]'
+                        : ''
+                    }`}
+                    style={{ transform: `translateY(-${siteIndex * 1.25}em)` }}
+                  >
+                    {HERO_SUPPORTED_SITES.map((site, i) => (
+                      <span
+                        key={`${site.name}-${i}`}
+                        className="h-[1.25em] flex items-center font-extrabold whitespace-nowrap bg-clip-text text-transparent"
+                        style={{
+                          backgroundImage: site.gradient,
+                          filter: site.shadow,
+                        }}
+                      >
+                        {site.name}
+                      </span>
+                    ))}
+                  </span>
                 </span>
               </div>
             </h1>

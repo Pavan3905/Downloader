@@ -250,8 +250,8 @@ export default function App() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-3xl lg:max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col items-center z-10 transition-all">
-        <div className="w-full my-auto flex flex-col items-center space-y-7">
+      <main className="flex-1 max-w-3xl lg:max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-16 pb-16 flex flex-col items-center z-10 transition-all">
+        <div className="w-full flex flex-col items-center space-y-7">
           {/* Hero Section */}
           <div
             className="text-center pt-2 pb-1 select-none flex items-center justify-center w-full px-2"

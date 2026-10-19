@@ -446,8 +446,8 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
 
   return (
     <div id="downloader-section" className="space-y-3.5 w-full">
-      {/* Top Smart Utility Row: Mode Selector and Platform Badge (Centered) */}
-      <div className="flex items-center justify-center gap-2.5 text-xs px-1">
+      {/* Top Smart Utility Row: Balanced Mode Selector and Status Hint */}
+      <div className="flex items-center justify-between text-xs px-1">
         {/* Single vs Batch Mode Switcher */}
         <div className="flex p-0.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl text-[11px] font-medium shadow-sm backdrop-blur-sm">
           <button
@@ -475,7 +475,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
           </button>
         </div>
 
-        {inputMode === 'single' && platform && (
+        {inputMode === 'single' && platform ? (
           <div
             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-medium transition-all ${platform.bg} shadow-sm animate-in fade-in`}
           >
@@ -484,6 +484,10 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
             <span className="opacity-50">·</span>
             <span className="opacity-90">{platform.badge}</span>
           </div>
+        ) : (
+          <span className="text-[11px] text-zinc-500 font-normal hidden sm:inline select-none">
+            Direct High-Speed Stream
+          </span>
         )}
       </div>
 

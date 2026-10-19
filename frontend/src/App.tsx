@@ -217,10 +217,8 @@ export default function App() {
       {/* Main Workspace */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-col justify-start space-y-8 z-10">
         {/* Hero Section */}
-        <div className="text-center space-y-3 pt-2 sm:pt-4">
-
-          {/* 3. Headline with Dynamic Platform Name Change & Preserved Second Line */}
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.15]">
+        <div className="text-center pt-2 pb-2">
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
             <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
               Download Any Video from{' '}
             </span>
@@ -228,18 +226,9 @@ export default function App() {
               key={currentPlatform.name}
               className={`bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-block animate-in fade-in slide-in-from-bottom-1 duration-200 font-extrabold drop-shadow-sm`}
             >
-              {currentPlatform.name}.
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              Zero Wait. Zero Limits.
+              {currentPlatform.name}
             </span>
           </h1>
-
-          {/* 4. Subtitle */}
-          <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-            Direct client-side media resolution. Stream 4K video, audio tracks, and full playlists straight from Google, Meta, Snapchat & CDN edges with zero cloud storage wait.
-          </p>
         </div>
 
         {/* Downloader Core Section */}

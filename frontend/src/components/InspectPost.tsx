@@ -768,241 +768,220 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   }, [distinctAudioFormats, audioCategoryFilter]);
 
   return (
-    <div id="downloader-section" className="space-y-3.5 w-full">
-      {/* Top Smart Utility Row: Balanced Mode Selector and Status Hint */}
-      <div className="flex items-center justify-between text-xs px-1">
-        {/* Single vs Batch Mode Switcher */}
-        <div className="mode-switcher-container flex p-0.5 bg-zinc-900/90 border border-zinc-800/80 rounded-xl text-[11px] font-medium shadow-sm backdrop-blur-sm">
+    <div id="downloader-section" className="w-full">
+      {/* Main Elevated Card from Reference Image */}
+      <div className="w-full rounded-3xl bg-white/95 dark:bg-zinc-900/90 border border-slate-200/90 dark:border-zinc-800/80 shadow-[0_20px_50px_rgba(59,130,246,0.08)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] p-5 sm:p-7 backdrop-blur-xl transition-all space-y-4">
+        {/* Mode Switcher Tabs (top-left) */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setInputMode('single')}
-            className={`mode-switcher-btn px-3 py-1 rounded-lg transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               inputMode === 'single'
-                ? 'active bg-zinc-800 text-white shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white bg-transparent'
             }`}
           >
-            Single Link
+            <Link2 className="w-3.5 h-3.5" />
+            <span>Link</span>
           </button>
           <button
             type="button"
             onClick={() => setInputMode('batch')}
-            className={`mode-switcher-btn px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               inputMode === 'batch'
-                ? 'active bg-zinc-800 text-white shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white bg-transparent'
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <Layers className="w-3.5 h-3.5" />
             <span>Batch (ZIP)</span>
           </button>
         </div>
-      </div>
 
-      {/* Auto-Clipboard Detection Pill Banner */}
-      {inputMode === 'single' && detectedClipboardUrl && (
-        <div className="p-2.5 rounded-xl bg-zinc-900/90 border border-emerald-500/30 text-xs flex items-center justify-between shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-1">
-          <div className="flex items-center gap-2 truncate pr-2">
-            <ClipboardPaste className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="truncate text-zinc-400">
-              Copied link detected:{' '}
-              <span className="text-zinc-200 font-mono text-[11px]">{detectedClipboardUrl}</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setUrl(detectedClipboardUrl);
-                handleInspect(detectedClipboardUrl);
-                setDetectedClipboardUrl(null);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-[11px] transition-all cursor-pointer shadow-sm active:scale-95"
-            >
-              Paste & Inspect
-            </button>
-            <button
-              type="button"
-              onClick={() => setDetectedClipboardUrl(null)}
-              className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Dismiss"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Input Area: Single Link Mode vs Batch Mode */}
-      {inputMode === 'single' ? (
-        <div className="relative">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleInspect();
-            }}
-            className="relative flex items-center omnibar-glow rounded-2xl transition-all"
-          >
-            {/* Dynamic Authentic Platform / Site Brand Icon */}
-            <div className="pl-4 shrink-0 flex items-center justify-center transition-all duration-200">
-              {renderSiteBrandIcon()}
+        {/* Auto-Clipboard Detection Pill Banner */}
+        {inputMode === 'single' && detectedClipboardUrl && (
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-emerald-500/30 text-xs flex items-center justify-between shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-2 truncate pr-2">
+              <ClipboardPaste className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="truncate text-slate-600 dark:text-zinc-400">
+                Copied link detected:{' '}
+                <span className="text-slate-900 dark:text-zinc-200 font-mono text-[11px]">{detectedClipboardUrl}</span>
+              </span>
             </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setUrl(detectedClipboardUrl);
+                  handleInspect(detectedClipboardUrl);
+                  setDetectedClipboardUrl(null);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                Paste & Inspect
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetectedClipboardUrl(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => {
-                setUrl(e.target.value);
-                if (media && e.target.value !== media.webpage_url) {
-                  setMedia(null);
+        {/* Input Area: Single Link Mode vs Batch Mode */}
+        {inputMode === 'single' ? (
+          <div className="relative">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (media) {
+                  handleDownload();
+                } else if (url.trim()) {
+                  handleInspect();
+                } else {
+                  handlePaste();
                 }
               }}
-              placeholder="Paste any YouTube, Instagram, Snapchat, TikTok, or video link..."
-              className="w-full h-14 pl-3.5 pr-32 bg-transparent text-sm sm:text-base text-zinc-100 placeholder-zinc-500 focus:outline-none"
-            />
+              className="relative flex items-center w-full rounded-2xl bg-slate-50/90 dark:bg-zinc-950/70 border border-slate-200/90 dark:border-zinc-800/90 p-1.5 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/15 shadow-inner transition-all"
+            >
+              {/* Dynamic Authentic Platform / Site Brand Icon */}
+              <div className="pl-3.5 pr-1 shrink-0 flex items-center justify-center transition-all duration-200">
+                {renderSiteBrandIcon()}
+              </div>
 
-            <div className="absolute right-2.5 flex items-center gap-1.5">
-              {/* Clear button when URL is typed */}
-              {url && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUrl('');
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  if (media && e.target.value !== media.webpage_url) {
                     setMedia(null);
-                  }}
-                  className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
-                  title="Clear input"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+                  }
+                }}
+                placeholder="Paste video link here..."
+                className="w-full h-12 sm:h-14 pl-2.5 pr-3 bg-transparent text-sm sm:text-base text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+              />
 
-              {/* Minimalist Aesthetic Paste Button */}
-              {!url && (
-                <button
-                  type="button"
-                  onClick={handlePaste}
-                  className="omnibar-paste-btn h-8 px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer select-none group"
-                  title="Paste from clipboard"
-                >
-                  {pasted ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.2]" />
-                      <span className="text-[11px] font-medium text-emerald-400">Pasted</span>
-                    </>
-                  ) : (
-                    <>
-                      <Clipboard className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-200 transition-colors stroke-[2]" />
-                      <span className="text-[11px] font-medium text-zinc-300 group-hover:text-white transition-colors">
-                        Paste
-                      </span>
-                    </>
-                  )}
-                </button>
-              )}
+              <div className="flex items-center gap-1.5 sm:gap-2 pr-1 shrink-0">
+                {/* Clear button when URL is typed */}
+                {url && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUrl('');
+                      setMedia(null);
+                    }}
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    title="Clear input"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
 
-              {/* Inspect Action */}
-              {url && (
+                {/* Minimalist Aesthetic Paste Button (Clipboard Icon from reference image) */}
+                {!url && (
+                  <button
+                    type="button"
+                    onClick={handlePaste}
+                    className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-all cursor-pointer select-none"
+                    title="Paste from clipboard"
+                  >
+                    {pasted ? (
+                      <Check className="w-4 h-4 text-emerald-500 stroke-[2.2]" />
+                    ) : (
+                      <Clipboard className="w-4 h-4 stroke-[2]" />
+                    )}
+                  </button>
+                )}
+
+                {/* Download → Action Button from Reference Image */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="h-9 px-3.5 rounded-xl btn-emerald-glow text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-md"
+                  className="h-10 sm:h-12 px-5 sm:px-6 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-blue-500/25 hover:shadow-blue-500/40 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 select-none"
                 >
                   {loading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Processing...</span>
+                    </>
                   ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <>
+                      <span>Download</span>
+                      <span className="text-base leading-none">→</span>
+                    </>
                   )}
-                  <span>Inspect</span>
-                  <kbd className="hidden sm:inline font-mono text-[10px] opacity-75 bg-black/20 px-1 py-0.2 rounded">↵</kbd>
                 </button>
-              )}
-            </div>
-          </form>
-
-          {/* Quick Instant Action Buttons (When URL is pasted but not yet inspected) */}
-          {url && !media && !loading && (
-            <div className="flex items-center justify-end gap-2 mt-2.5 px-1 animate-in fade-in duration-200">
-              <button
-                type="button"
-                onClick={() => handleDownload(false)}
-                className="text-xs font-medium px-3.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-              >
-                <Video className="w-3.5 h-3.5 text-sky-400" />
-                <span>Instant Video</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDownload(true)}
-                className="text-xs font-medium px-3.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-              >
-                <Music className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Instant Audio</span>
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Batch Multi-URL Mode */
-        <div className="glass-card rounded-2xl p-4 sm:p-5 shadow-2xl space-y-3.5 backdrop-blur-md animate-in fade-in">
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-amber-400" />
-              <span className="font-semibold text-zinc-200">Batch Link Processor</span>
-            </div>
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-[11px] font-semibold">
-              {parsedBatchUrls.length} links ready
-            </span>
+              </div>
+            </form>
           </div>
-
-          <textarea
-            value={batchUrlsText}
-            onChange={(e) => setBatchUrlsText(e.target.value)}
-            rows={4}
-            placeholder={`https://www.youtube.com/watch?v=...\nhttps://www.instagram.com/reel/...\nhttps://www.tiktok.com/@user/video/...`}
-            className="w-full p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 resize-none leading-relaxed"
-          />
-
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex p-0.5 bg-zinc-950 rounded-xl border border-zinc-800 text-xs">
-              <button
-                type="button"
-                onClick={() => setMode('video')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                  mode === 'video' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                <Video className="w-3.5 h-3.5 text-sky-400" />
-                <span>Video (.MP4)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('audio')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                  mode === 'audio' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                <Music className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Audio (.MP3)</span>
-              </button>
+        ) : (
+          /* Batch Multi-URL Mode */
+          <div className="rounded-2xl p-4 sm:p-5 bg-slate-50/70 dark:bg-zinc-950/70 border border-slate-200/90 dark:border-zinc-800 space-y-3.5 backdrop-blur-md animate-in fade-in">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="font-semibold text-slate-800 dark:text-zinc-200">Batch Link Processor</span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 font-mono text-[11px] font-semibold">
+                {parsedBatchUrls.length} links ready
+              </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleBatchZipDownload(parsedBatchUrls)}
-              disabled={downloadingZip || parsedBatchUrls.length === 0}
-              className="btn-amber-glow px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 disabled:opacity-50"
-            >
-              {downloadingZip ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Archive className="w-4 h-4" />
-              )}
-              <span>Stream All as .ZIP</span>
-            </button>
+            <textarea
+              value={batchUrlsText}
+              onChange={(e) => setBatchUrlsText(e.target.value)}
+              rows={4}
+              placeholder={`https://www.youtube.com/watch?v=...\nhttps://www.instagram.com/reel/...\nhttps://www.tiktok.com/@user/video/...`}
+              className="w-full p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-xs font-mono text-slate-900 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none focus:border-blue-500/50 resize-none leading-relaxed"
+            />
+
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex p-0.5 bg-slate-200/60 dark:bg-zinc-950 rounded-xl border border-slate-200 dark:border-zinc-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setMode('video')}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    mode === 'video' ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-zinc-400'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Video (.MP4)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('audio')}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    mode === 'audio' ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-zinc-400'
+                  }`}
+                >
+                  <Music className="w-3.5 h-3.5 text-violet-500" />
+                  <span>Audio (.MP3)</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleBatchZipDownload(parsedBatchUrls)}
+                disabled={downloadingZip || parsedBatchUrls.length === 0}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/25 active:scale-95 disabled:opacity-50"
+              >
+                {downloadingZip ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Archive className="w-4 h-4" />
+                )}
+                <span>Stream All as .ZIP</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Error Alert */}
       {error && (

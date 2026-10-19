@@ -1,125 +1,109 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
-import { PlatformMarquee, PlatformItem } from './components/PlatformMarquee';
 import { AdvancedSettings } from './types';
+import { Zap, ShieldCheck, Infinity } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
-const MemoPlatformMarquee = React.memo(PlatformMarquee);
 
-// Supported & Rotating Platforms Catalog (with authentic brand gradients and rich glow hues)
-const ROTATING_PLATFORMS = [
+// 8 Platform Pills catalog from reference image
+const PLATFORM_PILLS = [
   {
+    id: 'youtube',
     name: 'YouTube',
     sampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    gradient: 'from-[#FF0000] via-[#FF264D] to-[#FF5500]',
-    dot: 'bg-red-500',
-    glow: 'radial-gradient(circle, rgba(255,0,50,0.35) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(255,0,50,0.35)]',
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#FF0000">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+      </svg>
+    ),
   },
   {
+    id: 'instagram',
     name: 'Instagram',
     sampleUrl: 'https://www.instagram.com/reel/C8Xy_sample',
-    gradient: 'from-[#F58529] via-[#DD2A7B] to-[#8134AF]',
-    dot: 'bg-pink-500',
-    glow: 'radial-gradient(circle, rgba(221,42,123,0.35) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(221,42,123,0.35)]',
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+        <defs>
+          <linearGradient id="ig-pill-icon" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f09433" />
+            <stop offset="30%" stopColor="#e6683c" />
+            <stop offset="60%" stopColor="#dc2743" />
+            <stop offset="85%" stopColor="#cc2366" />
+            <stop offset="100%" stopColor="#bc1888" />
+          </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="url(#ig-pill-icon)" strokeWidth="2.2" />
+        <circle cx="12" cy="12" r="4.2" stroke="url(#ig-pill-icon)" strokeWidth="2" />
+        <circle cx="17.2" cy="6.8" r="1.2" fill="url(#ig-pill-icon)" />
+      </svg>
+    ),
   },
   {
-    name: 'Snapchat',
-    sampleUrl: 'https://www.snapchat.com/spotlight/W7_EDnXwT1gAA',
-    gradient: 'from-[#FFE600] via-[#FFD000] to-[#FFAA00]',
-    dot: 'bg-yellow-400',
-    glow: 'radial-gradient(circle, rgba(255,220,0,0.35) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(255,220,0,0.25)]',
-  },
-  {
+    id: 'tiktok',
     name: 'TikTok',
     sampleUrl: 'https://www.tiktok.com/@tiktok/video/7106594312292453678',
-    gradient: 'from-[#00F2FE] via-[#4FACFE] to-[#00F2FE]',
-    dot: 'bg-cyan-400',
-    glow: 'radial-gradient(circle, rgba(0,242,254,0.35) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(0,242,254,0.35)]',
+    icon: (
+      <svg className="w-4 h-4 shrink-0 text-slate-900 dark:text-white" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.35 0 .68.06.98.17V8.9a6.3 6.3 0 0 0-.98-.08A6.33 6.33 0 0 0 3 15.15a6.33 6.33 0 0 0 6.34 6.34 6.33 6.33 0 0 0 6.33-6.34V8.52a8.27 8.27 0 0 0 4.92 1.6V6.69h-1z" />
+      </svg>
+    ),
   },
   {
-    name: 'X (Twitter)',
-    sampleUrl: 'https://x.com/SpaceX/status/1649078635876352000',
-    gradient: 'from-[#FFFFFF] via-[#E2E8F0] to-[#94A3B8]',
-    dot: 'bg-slate-300',
-    glow: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(255,255,255,0.2)]',
+    id: 'facebook',
+    name: 'Facebook',
+    sampleUrl: 'https://www.facebook.com/watch/?v=123456789',
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#1877F2">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      </svg>
+    ),
   },
   {
-    name: 'SoundCloud',
-    sampleUrl: 'https://soundcloud.com/octobersveryown/champagnepapi-laugh-now-cry',
-    gradient: 'from-[#FF5500] via-[#FF7700] to-[#FFAA00]',
-    dot: 'bg-amber-400',
-    glow: 'radial-gradient(circle, rgba(255,85,0,0.35) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(255,85,0,0.35)]',
-  },
-  {
+    id: 'reddit',
     name: 'Reddit',
     sampleUrl: 'https://www.reddit.com/r/aww/comments/12345/cute_cat/',
-    gradient: 'from-[#FF4500] via-[#FF5722] to-[#FF7043]',
-    dot: 'bg-orange-500',
-    glow: 'radial-gradient(circle, rgba(255,69,0,0.35) 0%, transparent 70%)',
-    shadow: 'drop-shadow-[0_2px_14px_rgba(255,69,0,0.35)]',
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#FF4500">
+        <circle cx="12" cy="12" r="12" fill="#FF4500" />
+        <path d="M19.2 12c0-.8-.6-1.4-1.4-1.4-.4 0-.8.2-1 .5-1-.7-2.4-1.2-4-1.3l.7-3.3 2.3.5c0 .6.5 1.1 1.1 1.1.6 0 1.1-.5 1.1-1.1s-.5-1.1-1.1-1.1c-.5 0-.9.3-1 .8l-2.6-.6c-.2 0-.3.1-.4.3l-.8 3.8c-1.6.1-3 .6-4 1.3-.3-.3-.6-.5-1.1-.5-.8 0-1.4.6-1.4 1.4 0 .6.3 1.1.8 1.3 0 .2 0 .4 0 .7 0 2.4 2.8 4.3 6.2 4.3s6.2-1.9 6.2-4.3c0-.2 0-.5 0-.7.4-.2.8-.7.8-1.3zm-9.7.8c0-.6.5-1.1 1.1-1.1s1.1.5 1.1 1.1-.5 1.1-1.1 1.1-1.1-.5-1.1-1.1zm5.8 3.2c-.7.7-2 1-3.3 1s-2.6-.3-3.3-1c-.1-.1-.1-.3 0-.4.1-.1.3-.1.4 0 .5.5 1.6.8 2.9.8s2.4-.3 2.9-.8c.1-.1.3-.1.4 0 .1.1.1.3 0 .4zm-.4-2.1c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1z" fill="white" />
+      </svg>
+    ),
+  },
+  {
+    id: 'pinterest',
+    name: 'Pinterest',
+    sampleUrl: 'https://www.pinterest.com/pin/123456789/',
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#BD081C">
+        <path d="M12 0a12 12 0 0 0-4.37 23.18c-.06-.94-.12-2.38.02-3.41.13-.93.85-6.04.85-6.04s-.22-.44-.22-1.08c0-1.01.59-1.77 1.32-1.77.62 0 .92.47.92 1.03 0 .63-.4 1.57-.61 2.44-.17.74.37 1.34 1.1 1.34 1.32 0 2.34-1.39 2.34-3.4 0-1.78-1.28-3.03-3.11-3.03-2.27 0-3.6 1.7-3.6 3.46 0 .69.26 1.42.59 1.82.07.08.08.15.06.23-.06.26-.2.83-.23.95-.04.16-.13.2-.3.12-1.11-.52-1.8-2.14-1.8-3.45 0-2.81 2.04-5.39 5.89-5.39 3.09 0 5.5 2.2 5.5 5.15 0 3.07-1.94 5.54-4.63 5.54-.9 0-1.76-.47-2.05-1.03l-.56 2.13c-.2.78-.75 1.76-1.12 2.36A12 12 0 1 0 12 0z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'snapchat',
+    name: 'Snapchat',
+    sampleUrl: 'https://www.snapchat.com/spotlight/W7_EDnXwT1gAA',
+    icon: (
+      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#FFE600">
+        <path d="M12.01 2c-3.53 0-5.69 2.4-5.71 4.71-.01.99.3 2.11.75 2.87.14.23.08.38-.07.49-.3.23-.74.52-1.17.82-.44.31-.77.66-.78 1.11-.02.66.6 1.07 1.25 1.34.19.08.3.17.29.35-.04.47-.23 1.52-.39 2.05-.2.66-.73 1.13-1.63 1.29-.27.05-.37.2-.3.42.16.51.85.87 1.73.91.46.02.88-.1 1.28-.27.42-.18.79-.19 1.19.04.82.47 1.95.84 3.56.84 1.62 0 2.75-.37 3.57-.84.4-.23.77-.22 1.19-.04.4.17.82.29 1.28.27.88-.04 1.57-.4 1.73-.91.07-.22-.03-.37-.3-.42-.9-.16-1.43-.63-1.63-1.29-.16-.53-.35-1.58-.39-2.05-.01-.18.1-.27.29-.35.65-.27 1.27-.68 1.25-1.34-.01-.45-.34-.8-.78-1.11-.43-.3-.87-.59-1.17-.82-.15-.11-.21-.26-.07-.49.45-.76.76-1.88.75-2.87C17.7 4.4 15.54 2 12.01 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'x',
+    name: 'X (Twitter)',
+    sampleUrl: 'https://x.com/SpaceX/status/1649078635876352000',
+    icon: (
+      <svg className="w-4 h-4 shrink-0 text-slate-900 dark:text-white" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    ),
   },
 ];
 
 export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  // Auto-rotating platform name with smooth vertical roll animation & pause on hover
-  const [platformIdx, setPlatformIdx] = useState(0);
-  const [prevPlatformIdx, setPrevPlatformIdx] = useState<number | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
-
-  const changePlatform = React.useCallback(
-    (newIdx: number) => {
-      if (newIdx === platformIdx || prevPlatformIdx !== null) return;
-      setPrevPlatformIdx(platformIdx);
-      setPlatformIdx(newIdx);
-      setTimeout(() => {
-        setPrevPlatformIdx(null);
-      }, 500);
-    },
-    [platformIdx, prevPlatformIdx]
-  );
-
-  const nextPlatform = React.useCallback(() => {
-    changePlatform((platformIdx + 1) % ROTATING_PLATFORMS.length);
-  }, [platformIdx, changePlatform]);
-
-  useEffect(() => {
-    if (isPaused) return;
-    const timer = setInterval(() => {
-      nextPlatform();
-    }, 2800);
-    return () => clearInterval(timer);
-  }, [isPaused, nextPlatform]);
-
-  const currentPlatform = ROTATING_PLATFORMS[platformIdx];
-
-  const handleSelectPlatform = (platform: PlatformItem) => {
-    const matchedIdx = ROTATING_PLATFORMS.findIndex(
-      (p) => p.name.toLowerCase().includes(platform.name.toLowerCase().split(' ')[0])
-    );
-    if (matchedIdx !== -1) {
-      changePlatform(matchedIdx);
-    }
-    showToast(`Targeting ${platform.name}`);
-  };
-
-  const handleTrySample = (url: string) => {
-    window.dispatchEvent(
-      new CustomEvent('app:global-paste', {
-        detail: { url, autoDownload: false },
-      })
-    );
-    showToast(`Loaded ${currentPlatform.name} sample link! Inspecting...`);
-  };
 
   // Theme state: 'dark' | 'light'
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -127,7 +111,7 @@ export default function App() {
       const saved = localStorage.getItem('clipstream_theme');
       if (saved === 'light' || saved === 'dark') return saved;
     } catch {}
-    return 'dark';
+    return 'light'; // Default to light mode matching reference image
   });
 
   useEffect(() => {
@@ -149,7 +133,7 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>({
+  const [advancedSettings] = useState<AdvancedSettings>({
     subtitle_mode: 'off',
     subtitle_languages: 'en.*,en',
     subtitle_format: 'best',
@@ -235,6 +219,15 @@ export default function App() {
     } catch {}
   }, []);
 
+  const handleSelectPlatformPill = (sampleUrl: string, name: string) => {
+    window.dispatchEvent(
+      new CustomEvent('app:global-paste', {
+        detail: { url: sampleUrl, autoDownload: false },
+      })
+    );
+    showToast(`Loaded ${name} sample link!`);
+  };
+
   return (
     <div
       className={`min-h-screen relative overflow-hidden ${
@@ -251,76 +244,163 @@ export default function App() {
       />
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-3xl lg:max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-16 pb-16 flex flex-col items-center z-10 transition-all">
-        <div className="w-full flex flex-col items-center space-y-7">
-          {/* Hero Section */}
-          <div
-            className="text-center pt-2 pb-1 select-none flex items-center justify-center w-full px-2"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-          >
-            <h1 className="hero-headline text-[clamp(1.2rem,3.6vw,2.35rem)] font-bold tracking-[-0.035em] leading-tight whitespace-nowrap inline-flex items-center justify-center max-w-full">
-              {/* 100% Static Prefix Text */}
-              <span className="hero-prefix-text text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] shrink-0 select-none transition-colors">
-                Download Any Video from&nbsp;
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-16 flex flex-col items-center z-10 transition-all">
+        <div className="w-full flex flex-col items-center space-y-6 sm:space-y-7">
+          
+          {/* Hero Section with Celestial Arc & 4 Floating Platform Cards */}
+          <div className="relative w-full max-w-3xl flex flex-col items-center justify-center pt-3 pb-2 select-none">
+            {/* Celestial Arc Curve */}
+            <div className="celestial-arc" />
+
+            {/* Ambient Floating Pastel Dots */}
+            <div className="absolute left-16 sm:left-28 top-3 w-2.5 h-2.5 rounded-full bg-violet-400/50 blur-[0.5px] pointer-events-none" />
+            <div className="absolute left-6 sm:left-10 bottom-2 w-3 h-3 rounded-full bg-cyan-400/50 blur-[0.5px] pointer-events-none" />
+            <div className="absolute right-8 sm:right-12 bottom-1 w-2.5 h-2.5 rounded-full bg-pink-400/50 blur-[0.5px] pointer-events-none" />
+            <div className="absolute right-20 sm:right-32 top-1 w-2 h-2 rounded-full bg-indigo-400/50 blur-[0.5px] pointer-events-none" />
+
+            {/* 4 Floating 3D Platform Squircle Cards from Reference Image */}
+            {/* Card 1: YouTube (far-left, tilted -10deg) */}
+            <button
+              type="button"
+              onClick={() => handleSelectPlatformPill('https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'YouTube')}
+              title="YouTube"
+              className="hidden sm:flex absolute -left-2 sm:-left-4 lg:-left-10 top-6 sm:top-8 float-card-1 z-10 w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-white dark:bg-zinc-800/90 shadow-[0_12px_28px_rgba(0,0,0,0.07)] dark:shadow-[0_14px_30px_rgba(0,0,0,0.5)] border border-slate-200/80 dark:border-zinc-700/60 items-center justify-center p-3 select-none transition-transform hover:scale-110 cursor-pointer"
+            >
+              <svg className="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="#FF0000">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+              </svg>
+            </button>
+
+            {/* Card 2: Instagram (mid-left, tilted -4deg) */}
+            <button
+              type="button"
+              onClick={() => handleSelectPlatformPill('https://www.instagram.com/reel/C8Xy_sample', 'Instagram')}
+              title="Instagram"
+              className="hidden sm:flex absolute left-14 sm:left-20 lg:left-22 -top-4 sm:-top-7 float-card-2 z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-zinc-800/90 shadow-[0_12px_28px_rgba(0,0,0,0.07)] dark:shadow-[0_14px_30px_rgba(0,0,0,0.5)] border border-slate-200/80 dark:border-zinc-700/60 items-center justify-center p-3 select-none transition-transform hover:scale-110 cursor-pointer"
+            >
+              <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="ig-hero-card" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#f09433" />
+                    <stop offset="25%" stopColor="#e6683c" />
+                    <stop offset="50%" stopColor="#dc2743" />
+                    <stop offset="75%" stopColor="#cc2366" />
+                    <stop offset="100%" stopColor="#bc1888" />
+                  </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="20" height="20" rx="5.5" stroke="url(#ig-hero-card)" strokeWidth="2.2" />
+                <circle cx="12" cy="12" r="4.2" stroke="url(#ig-hero-card)" strokeWidth="2" />
+                <circle cx="17.2" cy="6.8" r="1.2" fill="url(#ig-hero-card)" />
+              </svg>
+            </button>
+
+            {/* Card 3: TikTok (mid-right, tilted +4deg) */}
+            <button
+              type="button"
+              onClick={() => handleSelectPlatformPill('https://www.tiktok.com/@tiktok/video/7106594312292453678', 'TikTok')}
+              title="TikTok"
+              className="hidden sm:flex absolute right-14 sm:right-20 lg:right-22 -top-4 sm:-top-7 float-card-3 z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-zinc-800/90 shadow-[0_12px_28px_rgba(0,0,0,0.07)] dark:shadow-[0_14px_30px_rgba(0,0,0,0.5)] border border-slate-200/80 dark:border-zinc-700/60 items-center justify-center p-3 select-none transition-transform hover:scale-110 cursor-pointer"
+            >
+              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-slate-900 dark:text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.35 0 .68.06.98.17V8.9a6.3 6.3 0 0 0-.98-.08A6.33 6.33 0 0 0 3 15.15a6.33 6.33 0 0 0 6.34 6.34 6.33 6.33 0 0 0 6.33-6.34V8.52a8.27 8.27 0 0 0 4.92 1.6V6.69h-1z" />
+              </svg>
+            </button>
+
+            {/* Card 4: X / Twitter (far-right, tilted +10deg) */}
+            <button
+              type="button"
+              onClick={() => handleSelectPlatformPill('https://x.com/SpaceX/status/1649078635876352000', 'X')}
+              title="X (Twitter)"
+              className="hidden sm:flex absolute -right-2 sm:-right-4 lg:-right-10 top-6 sm:top-8 float-card-4 z-10 w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-white dark:bg-zinc-800/90 shadow-[0_12px_28px_rgba(0,0,0,0.07)] dark:shadow-[0_14px_30px_rgba(0,0,0,0.5)] border border-slate-200/80 dark:border-zinc-700/60 items-center justify-center p-3.5 select-none transition-transform hover:scale-110 cursor-pointer"
+            >
+              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-slate-900 dark:text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </button>
+
+            {/* Pill Badge: ⚡ Fast • Simple • Free */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100/90 dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-700/60 shadow-xs mb-3.5 select-none">
+              <Zap className="w-3.5 h-3.5 text-violet-500 fill-violet-500" />
+              <span className="text-xs font-medium text-slate-600 dark:text-zinc-300">
+                Fast &bull; Simple &bull; Free
               </span>
+            </div>
 
-              {/* Sized-to-Fit Platform Word with Perfect Optical Centering */}
-              <span
-                className="relative inline-flex items-center justify-center platform-rotator-mask cursor-pointer group h-[1.35em] align-baseline shrink-0"
-                onClick={nextPlatform}
-                title="Click to cycle platform"
-                aria-label={`Current platform: ${currentPlatform.name}. Click to switch.`}
-              >
-                {/* Dynamic Hue Ambient Backlight (Centered Directly Behind Word) */}
-                <span
-                  className="absolute -inset-x-6 -inset-y-2 rounded-full blur-2xl opacity-40 pointer-events-none transition-all duration-700 ease-out"
-                  style={{ background: currentPlatform.glow }}
-                />
-
-                {/* Sizer Element: Sizes Container to Active Word */}
-                <span className="invisible select-none opacity-0 pointer-events-none font-bold whitespace-nowrap">
-                  {currentPlatform.name}
+            {/* Headline: Download Videos / from Anywhere */}
+            <h1 className="text-3xl sm:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight text-center leading-[1.15] select-none">
+              <div className="text-slate-900 dark:text-white">Download Videos</div>
+              <div className="mt-1">
+                <span className="text-[#8B5CF6]">from </span>
+                <span className="bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] bg-clip-text text-transparent">
+                  Anywhere
                 </span>
-
-                {/* Outgoing Platform (Slide Out) */}
-                {prevPlatformIdx !== null && (
-                  <span
-                    className={`absolute inset-0 flex items-center justify-center font-bold tracking-[-0.035em] bg-gradient-to-r ${ROTATING_PLATFORMS[prevPlatformIdx].gradient} bg-clip-text text-transparent platform-slide-out ${ROTATING_PLATFORMS[prevPlatformIdx].shadow} whitespace-nowrap`}
-                  >
-                    {ROTATING_PLATFORMS[prevPlatformIdx].name}
-                  </span>
-                )}
-
-                {/* Active Platform (Slide In) */}
-                <span
-                  className={`absolute inset-0 flex items-center justify-center ${prevPlatformIdx !== null ? 'platform-slide-in' : ''} font-bold tracking-[-0.035em] bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent ${currentPlatform.shadow} group-hover:scale-[1.02] transition-transform duration-200 whitespace-nowrap`}
-                >
-                  {currentPlatform.name}
-                </span>
-              </span>
+              </div>
             </h1>
+
+            {/* Subtitle */}
+            <p className="mt-3 text-slate-500 dark:text-zinc-400 text-xs sm:text-sm md:text-base font-normal text-center max-w-md mx-auto leading-relaxed">
+              Save videos from YouTube, Instagram, TikTok and more in just a few clicks.
+            </p>
           </div>
 
-          {/* Downloader Core Section */}
+          {/* Downloader Core Section (Elevated Rounded-3xl Card) */}
           <section id="downloader-section" className="w-full">
             <MemoInspectPost advancedSettings={advancedSettings} />
           </section>
 
-          {/* Auto-Scrolling Supported Platforms Marquee */}
-          <section className="w-full pt-1">
-            <MemoPlatformMarquee onSelectPlatform={handleSelectPlatform} />
+          {/* 8 Platform Pill Chips from Reference Image */}
+          <section className="w-full flex items-center justify-center flex-wrap gap-2 sm:gap-2.5 pt-1 select-none">
+            {PLATFORM_PILLS.map((pill) => (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => handleSelectPlatformPill(pill.sampleUrl, pill.name)}
+                className="px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs hover:shadow-md hover:scale-105 active:scale-95 transition-all text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-2 cursor-pointer"
+                title={`Target ${pill.name}`}
+              >
+                {pill.icon}
+                <span className="tracking-tight whitespace-nowrap">{pill.name}</span>
+              </button>
+            ))}
           </section>
+
+          {/* 3 Feature Highlights from Reference Image */}
+          <section className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 pt-8 pb-4 text-center">
+            {/* Feature 1 */}
+            <div className="flex flex-col items-center md:px-6">
+              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 shadow-xs">
+                <Zap className="w-5 h-5 fill-current" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">Super Fast</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Get your videos in seconds</p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="flex flex-col items-center md:px-6 md:border-l md:border-r border-slate-200/80 dark:border-zinc-800/80">
+              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 shadow-xs">
+                <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">Safe & Secure</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">No login required</p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="flex flex-col items-center md:px-6">
+              <div className="w-11 h-11 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-2.5 shadow-xs">
+                <Infinity className="w-5 h-5 stroke-[2.4]" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">No Limits</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Download as many as you want</p>
+            </div>
+          </section>
+
         </div>
       </main>
 
-      {/* Clean Centered Copyright Footer */}
-      <footer className="w-full border-t border-white/[0.06] mt-auto py-6 px-4 sm:px-6 select-none z-10 transition-colors">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center text-center text-xs text-zinc-500 font-normal">
-          <span>© {new Date().getFullYear()} Downloader. All rights reserved.</span>
-        </div>
+      {/* Clean Centered Copyright Footer from Reference Image */}
+      <footer className="w-full mt-auto py-6 sm:py-8 text-center text-xs text-slate-400 dark:text-zinc-500 select-none">
+        &copy; 2026 Downloader. Made for everyone.
       </footer>
-
 
       {/* Toast Notification */}
       {toastMessage && (

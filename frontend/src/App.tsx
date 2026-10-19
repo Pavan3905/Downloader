@@ -259,16 +259,20 @@ export default function App() {
             <span className="text-emerald-400 font-mono font-medium">50+ MB/s Stream</span>
           </div>
 
-          {/* 3. Headline with Dynamic Platform Name Change */}
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.18] min-h-[75px] sm:min-h-[115px] flex flex-col items-center justify-center">
+          {/* 3. Headline with Dynamic Platform Name Change & Preserved Second Line */}
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.15]">
             <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-              Download Any Video from
+              Download Any Video from{' '}
             </span>
             <span
               key={currentPlatform.name}
-              className={`bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-block animate-in fade-in slide-in-from-bottom-2 duration-300 font-black drop-shadow-sm`}
+              className={`bg-gradient-to-r ${currentPlatform.gradient} bg-clip-text text-transparent inline-block animate-in fade-in slide-in-from-bottom-1 duration-200 font-extrabold drop-shadow-sm`}
             >
-              {currentPlatform.name}
+              {currentPlatform.name}.
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+              Zero Wait. Zero Limits.
             </span>
           </h1>
 

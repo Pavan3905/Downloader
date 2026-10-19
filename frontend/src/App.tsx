@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
 import { SettingsSheet } from './components/SettingsSheet';
 import { AdvancedSettings } from './types';
-import { Sliders, X, Zap, ShieldCheck, Scissors, Archive, Sparkles } from 'lucide-react';
+import { Sliders, X } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
 const MemoSettingsSheet = React.memo(SettingsSheet);
@@ -305,60 +305,6 @@ export default function App() {
           <MemoInspectPost advancedSettings={advancedSettings} />
         </section>
 
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-6 border-t border-white/[0.06]">
-          {/* Card 1: Edge CDN */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
-                <Zap className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Direct Edge CDN Stream</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-              Downloads resolve signed Google & edge CDN links in ~300ms, streaming straight to your browser at 50-100 MB/s.
-            </p>
-          </div>
-
-          {/* Card 2: 100% Private */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <span className="text-sm font-semibold text-zinc-100 tracking-tight">100% Client-Side Private</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-              No server database, no file retention, and no bandwidth logging. Every byte flows directly to your device storage.
-            </p>
-          </div>
-
-          {/* Card 3: Visual Section Trimmer */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
-                <Scissors className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Visual Section Trimmer</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-              Interactive timeline scrubber lets you clip custom highlights and export only the required seconds losslessly.
-            </p>
-          </div>
-
-          {/* Card 4: Streamed Batch ZIP Engine */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 border border-white/[0.06] backdrop-blur-sm space-y-2 hover:border-white/15 hover:bg-zinc-900/60 transition-all duration-200 group">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-105 transition-transform">
-                <Archive className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <span className="text-sm font-semibold text-zinc-100 tracking-tight">Streamed Batch ZIP Engine</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-              Paste multiple URLs or choose entire playlist tracks. Downloads are compressed on the fly into a single `.zip` file.
-            </p>
-          </div>
-        </div>
       </main>
 
       {/* Clean Centered Copyright Footer */}

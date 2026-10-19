@@ -7,6 +7,7 @@ import {
   Video,
   ExternalLink,
   Loader2,
+  Clipboard,
   ClipboardPaste,
   Check,
   ChevronDown,
@@ -117,8 +118,9 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      if (text && /^https?:\/\//i.test(text.trim())) {
-        setUrl(text.trim());
+      const trimmed = text ? text.trim() : '';
+      if (trimmed) {
+        setUrl(trimmed);
         setPasted(true);
         setTimeout(() => setPasted(false), 1500);
       }
@@ -577,21 +579,27 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                 </button>
               )}
 
-              {/* Paste button when empty */}
+              {/* Minimalist Aesthetic Paste Button */}
               {!url && (
                 <button
                   type="button"
                   onClick={handlePaste}
-                  className="h-9 px-3 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  className="omnibar-paste-btn h-8 px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer select-none group"
                   title="Paste from clipboard"
                 >
                   {pasted ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.2]" />
+                      <span className="text-[11px] font-medium text-emerald-400">Pasted</span>
+                    </>
                   ) : (
-                    <ClipboardPaste className="w-3.5 h-3.5 text-zinc-400" />
+                    <>
+                      <Clipboard className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-200 transition-colors stroke-[2]" />
+                      <span className="text-[11px] font-medium text-zinc-300 group-hover:text-white transition-colors">
+                        Paste
+                      </span>
+                    </>
                   )}
-                  <span className="text-[11px] font-medium hidden sm:inline">Paste</span>
-                  <span className="text-[10px] text-zinc-500 font-mono hidden md:inline">⌘V</span>
                 </button>
               )}
 

@@ -83,19 +83,54 @@ export const InspectPost: React.FC<InspectPostProps> = ({
     }
   };
 
-  const handleDownload = async (isAudioOverride?: boolean) => {
+  const handleDownload = (isAudioOverride?: boolean) => {
     const targetUrl = media ? media.webpage_url : url.trim();
     if (!targetUrl) return;
 
     const isAudio = isAudioOverride !== undefined ? isAudioOverride : mode === 'audio';
+    const selectedFormat = isAudio ? 'best' : quality;
+    const mediaTitle = media?.title || '';
+
+    // Direct stream directly to user's device (bypasses server library)
+    const params = new URLSearchParams({
+      url: targetUrl,
+      title: mediaTitle,
+      format_id: selectedFormat,
+      audio_only: isAudio ? 'true' : 'false',
+      audio_format: audioFormat,
+    });
+
+    const streamUrl = `/api/stream?${params.toString()}`;
+
+    const link = document.createElement('a');
+    link.href = streamUrl;
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
+    }, 1000);
+
+    window.dispatchEvent(
+      new CustomEvent('app:toast', {
+        detail: `Direct download started: ${mediaTitle || 'Media file'}`,
+      })
+    );
+  };
+
+  const handleQueueDownload = async () => {
+    const targetUrl = media ? media.webpage_url : url.trim();
+    if (!targetUrl) return;
+
     setDownloading(true);
     setError(null);
-
     try {
       await onStartDownload(targetUrl, {
         title: media?.title || undefined,
-        format_id: isAudio ? 'best' : quality,
-        audio_only: isAudio,
+        format_id: mode === 'audio' ? 'best' : quality,
+        audio_only: mode === 'audio',
         audio_format: audioFormat,
         quality: '320',
         merge_output_format: container,
@@ -278,15 +313,10 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDownload()}
-                  disabled={downloading}
-                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md disabled:opacity-50"
+                  className="ml-auto px-4 py-1.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md"
                 >
-                  {downloading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  <span>{downloading ? 'Starting...' : 'Download to Device'}</span>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Direct Download</span>
                 </button>
               </div>
             </div>
@@ -350,7 +380,7 @@ export const InspectPost: React.FC<InspectPostProps> = ({
 
           {/* Collapsible Format & Advanced Options */}
           {showOptions && (
-            <div className="pt-2 border-t border-zinc-800/40 grid grid-cols-2 gap-3 text-xs animate-in fade-in duration-150">
+            <div className="pt-2 border-t border-zinc-800/40 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs animate-in fade-in duration-150">
               <div>
                 <label className="text-[11px] text-zinc-500 block mb-1">Container</label>
                 <select
@@ -371,11 +401,25 @@ export const InspectPost: React.FC<InspectPostProps> = ({
                   href={media.webpage_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors w-full"
                 >
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3 shrink-0" />
                   <span className="truncate">Open Origin</span>
                 </a>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-zinc-500 block mb-1">Background Queue</label>
+                <button
+                  type="button"
+                  onClick={handleQueueDownload}
+                  disabled={downloading}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer w-full disabled:opacity-50"
+                  title="Download in background to server library"
+                >
+                  {downloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3 text-sky-400" />}
+                  <span className="truncate">Save to Server</span>
+                </button>
               </div>
             </div>
           )}

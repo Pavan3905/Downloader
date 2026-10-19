@@ -150,6 +150,16 @@ export default function App() {
     }
   }, [jobs, triggerDeviceDownload]);
 
+  // Toast notification event listener
+  useEffect(() => {
+    const onToast = (e: Event) => {
+      const msg = (e as CustomEvent<string>).detail;
+      if (msg) showToast(msg);
+    };
+    window.addEventListener('app:toast', onToast);
+    return () => window.removeEventListener('app:toast', onToast);
+  }, []);
+
   // Deep event listeners for in-app anchor links
   useEffect(() => {
     const onNavigate = (e: Event) => {

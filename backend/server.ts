@@ -827,6 +827,105 @@ async function startServer() {
     }
   });
 
+  // Direct Streaming Download API (Streams directly to device without saving to server library)
+  app.get('/api/stream', async (req: Request, res: Response) => {
+    const targetUrl = String(req.query.url || '').trim();
+    if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+      return res.status(400).send('Enter a valid URL.');
+    }
+
+    const isAudioOnly = req.query.audio_only === 'true' || req.query.audio_only === '1';
+    const quality = String(req.query.format_id || 'best');
+    const incomingTitle = String(req.query.title || '').trim();
+    const audioFormat = String(req.query.audio_format || 'mp3');
+
+    // Resolve title for filename
+    let title = incomingTitle;
+    if (!title || title === 'Media Stream') {
+      try {
+        const meta = await inspectUrl(targetUrl);
+        if (meta && meta.title) title = meta.title;
+      } catch {}
+    }
+    const cleanTitle = sanitizeFilename(title || 'media_download');
+    const ext = isAudioOnly
+      ? (audioFormat === 'flac' ? 'flac' : audioFormat === 'm4a' ? 'm4a' : 'mp3')
+      : 'mp4';
+    const filename = `${cleanTitle}.${ext}`;
+    const asciiName = filename.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '');
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+    res.setHeader('Content-Type', isAudioOnly ? 'audio/mpeg' : 'video/mp4');
+
+    // Check direct media stream
+    if (/\.(mp4|webm|mov|m4v|mp3|m4a|wav|flac)(\?.*)?$/i.test(targetUrl)) {
+      try {
+        const upstream = await fetch(targetUrl);
+        if (upstream.ok && upstream.body) {
+          const reader = upstream.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(Buffer.from(value));
+          }
+          return res.end();
+        }
+      } catch {}
+    }
+
+    const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
+    const ytdlpArgs = [
+      '--ffmpeg-location', ffmpegLoc,
+      '--no-playlist',
+      '--no-warnings',
+      '--no-mtime',
+      '--concurrent-fragments', '8',
+      '--buffer-size', '16M',
+      '--http-chunk-size', '10M',
+      '--extractor-args', 'youtube:player_client=android,web',
+    ];
+
+    if (fs.existsSync(COOKIES_FILE)) {
+      ytdlpArgs.push('--cookies', COOKIES_FILE);
+    }
+
+    if (isAudioOnly) {
+      ytdlpArgs.push(
+        '-f', 'ba[protocol^=http]/ba/b',
+        '-x',
+        '--audio-format', ext,
+        '-o', '-',
+        targetUrl
+      );
+    } else {
+      ytdlpArgs.push(
+        '-f', getFormatSelector(quality, false, 'mp4'),
+        '-o', '-',
+        targetUrl
+      );
+    }
+
+    const child = spawn(YTDLP_PATH, ytdlpArgs);
+
+    child.stdout.pipe(res);
+
+    req.on('close', () => {
+      try {
+        child.kill('SIGKILL');
+      } catch {}
+    });
+
+    child.on('error', (err) => {
+      console.error('[Stream Error]', err);
+      if (!res.headersSent) {
+        res.status(500).send('Streaming failed.');
+      }
+    });
+  });
+
   // Create Download Job
   app.post('/api/downloads', (req: Request, res: Response) => {
     const {

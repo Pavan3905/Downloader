@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InspectPost } from './components/InspectPost';
 import { AdvancedSettings } from './types';
-import { Zap, ShieldCheck, Infinity } from 'lucide-react';
 
 const MemoInspectPost = React.memo(InspectPost);
 
@@ -351,35 +350,6 @@ export default function App() {
             ))}
           </section>
 
-          {/* 3 Feature Highlights from Reference Image */}
-          <section className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 pt-8 pb-4 text-center">
-            {/* Feature 1 */}
-            <div className="flex flex-col items-center md:px-6">
-              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 shadow-xs">
-                <Zap className="w-5 h-5 fill-current" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">Super Fast</h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Get your videos in seconds</p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="flex flex-col items-center md:px-6 md:border-l md:border-r border-slate-200/80 dark:border-zinc-800/80">
-              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 shadow-xs">
-                <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">Safe & Secure</h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">No login required</p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="flex flex-col items-center md:px-6">
-              <div className="w-11 h-11 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-2.5 shadow-xs">
-                <Infinity className="w-5 h-5 stroke-[2.4]" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">No Limits</h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Download as many as you want</p>
-            </div>
-          </section>
 
         </div>
       </main>

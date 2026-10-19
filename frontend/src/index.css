@@ -59,6 +59,35 @@
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
 }
 
+/* Minimalist Header in Light Mode */
+.light header {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+.light header .brand-tile {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #059669 !important;
+}
+.light header .brand-tile:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(5, 150, 105, 0.3) !important;
+}
+.light header .nav-btn {
+  color: #71717a !important;
+}
+.light header .nav-btn:hover {
+  color: #09090b !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.light header span.text-zinc-100 {
+  color: #18181b !important;
+}
+.light header button:hover span.text-zinc-100 {
+  color: #000000 !important;
+}
+
 /* Glowing Button Utility */
 .btn-emerald-glow {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);

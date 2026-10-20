@@ -132,6 +132,9 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
         setUrl(trimmed);
         setPasted(true);
         setTimeout(() => setPasted(false), 1500);
+        if (/^https?:\/\//i.test(trimmed)) {
+          handleInspect(trimmed);
+        }
       }
     } catch {
       // clipboard access denied
@@ -913,7 +916,7 @@ export const InspectPost: React.FC<InspectPostProps> = () => {
                   ) : (
                     <Sparkles className="w-3.5 h-3.5" />
                   )}
-                  <span>Inspect</span>
+                  <span>{loading ? 'Inspecting...' : 'Inspect'}</span>
                   <kbd className="hidden sm:inline font-mono text-[10px] opacity-75 bg-black/20 px-1 py-0.2 rounded">↵</kbd>
                 </button>
               )}

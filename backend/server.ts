@@ -26,7 +26,14 @@ const __dirname = path.dirname(__filename);
 const ROOT = __dirname;
 const DOWNLOADS_DIR = path.resolve(process.env.CLIPSTREAM_DOWNLOAD_DIR || path.join(ROOT, 'downloads'));
 const COOKIES_FILE = path.join(DOWNLOADS_DIR, '.youtube_cookies.txt');
+const GENERIC_COOKIES_FILE = path.join(DOWNLOADS_DIR, '.cookies.txt');
 const STATE_FILE = path.join(DOWNLOADS_DIR, '.state.json');
+
+function getCookiesArg(): string[] {
+  if (fs.existsSync(GENERIC_COOKIES_FILE)) return ['--cookies', GENERIC_COOKIES_FILE];
+  if (fs.existsSync(COOKIES_FILE)) return ['--cookies', COOKIES_FILE];
+  return [];
+}
 
 if (!fs.existsSync(DOWNLOADS_DIR)) {
   fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
@@ -318,19 +325,38 @@ async function resolveDirectCdnUrl(
     ? 'b[protocol^=http]/best[protocol^=http]/best'
     : `b[height<=${parseQualityHeight(quality) || 720}][protocol^=http]/b[height<=${parseQualityHeight(quality) || 720}]/best[protocol^=http]/best`;
 
+  const isYoutube = /youtube\.com|youtu\.be/i.test(targetUrl);
+
   try {
-    const result = await runYtDlpWithShield((client) => {
+    let result: { code: number | null; stdout: string; stderr: string; timedOut: boolean };
+    if (isYoutube) {
+      result = await runYtDlpWithShield((client) => {
+        const args = [
+          '--no-playlist',
+          '--no-warnings',
+          '-g',
+          '--extractor-args', `youtube:player_client=${client}`,
+          '-f', selector,
+        ];
+        args.push(...getCookiesArg());
+        args.push(targetUrl);
+        return args;
+      }, 10000);
+    } else {
       const args = [
         '--no-playlist',
         '--no-warnings',
+        '--socket-timeout', '6',
+        '--extractor-retries', '1',
+        '--no-check-certificates',
+        '--impersonate', 'Chrome',
         '-g',
-        '--extractor-args', `youtube:player_client=${client}`,
         '-f', selector,
       ];
-      if (fs.existsSync(COOKIES_FILE)) args.push('--cookies', COOKIES_FILE);
+      args.push(...getCookiesArg());
       args.push(targetUrl);
-      return args;
-    }, 20000);
+      result = await runYtDlp(args, 8000);
+    }
 
     if (result.code === 0 && result.stdout.trim()) {
       const lines = result.stdout.trim().split('\n').map((l) => l.trim()).filter((l) => /^https?:\/\//i.test(l));
@@ -355,6 +381,14 @@ async function inspectUrl(targetUrl: string) {
   let videoId = '';
   let isYoutube = false;
   let isVimeo = false;
+  const isInstagram = hostname.includes('instagram.com') || hostname.includes('instagr.am');
+
+  let igShortcode = '';
+  if (isInstagram) {
+    const m = parsed.pathname.match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i);
+    igShortcode = m ? m[1] : '';
+    if (igShortcode) videoId = igShortcode;
+  }
 
   if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
     isYoutube = true;
@@ -462,21 +496,50 @@ async function inspectUrl(targetUrl: string) {
 
   if (HAS_YTDLP && !isDirectMedia && /^https?:\/\//i.test(targetUrl)) {
     try {
-      const { code, stdout } = await runYtDlpWithShield((client) => {
+      let code: number | null = -1;
+      let stdout = '';
+
+      if (isYoutube) {
+        const res = await runYtDlpWithShield((client) => {
+          const inspectArgs = [
+            '--no-warnings',
+            '--no-playlist',
+            '--skip-download',
+            '--socket-timeout', '6',
+            '--extractor-args', `youtube:player_client=${client}`,
+          ];
+          inspectArgs.push(...getCookiesArg());
+          if (isPlaylist) {
+            inspectArgs.push('--flat-playlist', '--playlist-items', '1-25');
+          }
+          inspectArgs.push('--dump-single-json', targetUrl);
+          return inspectArgs;
+        }, 10000);
+        code = res.code;
+        stdout = res.stdout;
+      } else {
+        // Non-YouTube platforms (Instagram, TikTok, Twitter/X, etc.):
+        // Run ONCE with browser impersonation, aggressive fast timeout and 1 retry.
+        // Prevents the 4-times sequential client rotation delay!
         const inspectArgs = [
           '--no-warnings',
           '--no-playlist',
           '--skip-download',
-          '--socket-timeout', '8',
-          '--extractor-args', `youtube:player_client=${client}`,
+          '--socket-timeout', '6',
+          '--extractor-retries', '1',
+          '--no-check-certificates',
+          '--impersonate', 'Chrome',
         ];
-        if (fs.existsSync(COOKIES_FILE)) inspectArgs.push('--cookies', COOKIES_FILE);
+        inspectArgs.push(...getCookiesArg());
         if (isPlaylist) {
           inspectArgs.push('--flat-playlist', '--playlist-items', '1-25');
         }
         inspectArgs.push('--dump-single-json', targetUrl);
-        return inspectArgs;
-      }, 12000);
+        const res = await runYtDlp(inspectArgs, isInstagram ? 7000 : 9000);
+        code = res.code;
+        stdout = res.stdout;
+      }
+
       if (code === 0 && stdout.trim()) {
         const data = JSON.parse(stdout.trim());
         if (data && data.title) {
@@ -531,7 +594,24 @@ async function inspectUrl(targetUrl: string) {
     }
   }
 
-  return {
+  // Fast smart fallback metadata for Instagram when anonymous scraping is blocked by Meta
+  if (isInstagram && (!title || title === 'Media Stream')) {
+    title = igShortcode
+      ? `Instagram ${parsed.pathname.includes('/reel') ? 'Reel' : 'Post'} (${igShortcode})`
+      : 'Instagram Media';
+    uploader = 'Instagram Creator';
+    description = `Instagram media from ${targetUrl}`;
+    channelUrl = 'https://www.instagram.com';
+    if (realFormats.length === 0) {
+      realFormats = [
+        { id: 'best', ext: 'mp4', resolution: 'Best Available (HD)', height: 1080, fps: 30, filesize: null, vcodec: 'avc1', acodec: 'mp4a', note: 'Original Quality', tbr: null },
+        { id: '720', ext: 'mp4', resolution: '720p HD', height: 720, fps: 30, filesize: null, vcodec: 'avc1', acodec: 'mp4a', note: 'HD 720p', tbr: null },
+        { id: 'audio-best', ext: 'mp3', resolution: 'Audio (MP3 320k)', height: null, fps: null, filesize: null, vcodec: 'none', acodec: 'mp3', note: 'High Quality Audio', tbr: 320 },
+      ];
+    }
+  }
+
+  const result = {
     id: videoId || crypto.randomUUID().slice(0, 8),
     title,
     uploader,
@@ -541,7 +621,7 @@ async function inspectUrl(targetUrl: string) {
     webpage_url: targetUrl,
     channel_url: channelUrl,
     description,
-    extractor: hostname,
+    extractor: isInstagram ? 'instagram' : hostname,
     is_playlist: isPlaylist,
     playlist_count: isPlaylist ? (realEntries.length || 12) : null,
     entries: realEntries,
@@ -553,6 +633,9 @@ async function inspectUrl(targetUrl: string) {
     chapters: realChapters,
     subtitles: realSubtitles,
   };
+
+  INSPECT_CACHE.set(targetUrl, { data: result, expiry: Date.now() + 3600000 });
+  return result;
 }
 
 async function executeDownloadJob(job: DownloadJob) {
@@ -614,7 +697,9 @@ async function executeDownloadJob(job: DownloadJob) {
     // 2. yt-dlp extraction with Multi-Client Bot Shield (auto-rotates spoofing profiles if blocked)
     if (!downloadedDirectly && fs.existsSync(YTDLP_PATH) && /^https?:\/\//i.test(job.url)) {
       const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
-      for (const client of BOT_SHIELD_CLIENTS) {
+      const isYoutube = /youtube\.com|youtu\.be/i.test(job.url);
+      const clientsToTry = isYoutube ? BOT_SHIELD_CLIENTS : ['direct'];
+      for (const client of clientsToTry) {
         if (downloadedDirectly) break;
         try {
           const ytdlpArgs = [
@@ -628,8 +713,13 @@ async function executeDownloadJob(job: DownloadJob) {
             '--http-chunk-size', '10M',
             '--retries', String(opts.retries || 5),
             '--fragment-retries', String(opts.fragment_retries || 5),
-            '--extractor-args', `youtube:player_client=${client}`,
           ];
+
+          if (isYoutube) {
+            ytdlpArgs.push('--extractor-args', `youtube:player_client=${client}`);
+          } else {
+            ytdlpArgs.push('--impersonate', 'Chrome', '--no-check-certificates');
+          }
 
           if (opts.limit_rate) {
             ytdlpArgs.push('--limit-rate', String(opts.limit_rate));
@@ -639,9 +729,7 @@ async function executeDownloadJob(job: DownloadJob) {
             ytdlpArgs.push('--proxy', String(opts.proxy));
           }
 
-          if (fs.existsSync(COOKIES_FILE)) {
-            ytdlpArgs.push('--cookies', COOKIES_FILE);
-          }
+          ytdlpArgs.push(...getCookiesArg());
 
           if (opts.metadata_mode === 'embed' || opts.metadata_mode === 'both') {
             ytdlpArgs.push('--embed-metadata');
@@ -748,8 +836,11 @@ async function executeDownloadJob(job: DownloadJob) {
       job.eta = null;
       job.childProcess = undefined;
 
-      if (lastStderr.includes('bot') || lastStderr.includes('Sign in')) {
-        job.error = 'YouTube requires bot verification. Upload your YouTube cookies in Settings to authenticate.';
+      if (lastStderr.includes('bot') || lastStderr.includes('Sign in') || lastStderr.includes('login') || lastStderr.includes('empty media')) {
+        const isYoutube = /youtube\.com|youtu\.be/i.test(job.url);
+        job.error = isYoutube
+          ? 'YouTube requires bot verification. Upload your YouTube cookies in Settings to authenticate.'
+          : 'This media source requires login or authentication. Add session cookies in Settings to download.';
       } else if (lastStderr.includes('Private video')) {
         job.error = 'This video is private. Add authenticated cookies in Settings.';
       } else {
@@ -1073,6 +1164,7 @@ async function startServer() {
     }
 
     const ffmpegLoc = fs.existsSync(FFMPEG_PATH) ? path.dirname(FFMPEG_PATH) : FFMPEG_PATH;
+    const isYoutube = /youtube\.com|youtu\.be/i.test(targetUrl);
     const ytdlpArgs = [
       '--ffmpeg-location', ffmpegLoc,
       '--no-playlist',
@@ -1081,12 +1173,15 @@ async function startServer() {
       '--concurrent-fragments', '8',
       '--buffer-size', '16M',
       '--http-chunk-size', '10M',
-      '--extractor-args', 'youtube:player_client=android,web',
     ];
 
-    if (fs.existsSync(COOKIES_FILE)) {
-      ytdlpArgs.push('--cookies', COOKIES_FILE);
+    if (isYoutube) {
+      ytdlpArgs.push('--extractor-args', 'youtube:player_client=android,web');
+    } else {
+      ytdlpArgs.push('--impersonate', 'Chrome', '--no-check-certificates');
     }
+
+    ytdlpArgs.push(...getCookiesArg());
 
     if (clipStart || clipEnd) {
       const start = clipStart || '00:00';
@@ -1189,15 +1284,20 @@ async function startServer() {
       const entryFilename = `${String(i + 1).padStart(2, '0')}_${itemTitle}.${ext}`;
 
       await new Promise<void>((resolveItem) => {
+        const isItemYoutube = /youtube\.com|youtu\.be/i.test(itemUrl);
         const ytdlpArgs = [
           '--ffmpeg-location', ffmpegLoc,
           '--no-playlist',
           '--no-warnings',
           '--no-mtime',
           '--concurrent-fragments', '4',
-          '--extractor-args', 'youtube:player_client=android,web',
         ];
-        if (fs.existsSync(COOKIES_FILE)) ytdlpArgs.push('--cookies', COOKIES_FILE);
+        if (isItemYoutube) {
+          ytdlpArgs.push('--extractor-args', 'youtube:player_client=android,web');
+        } else {
+          ytdlpArgs.push('--impersonate', 'Chrome', '--no-check-certificates');
+        }
+        ytdlpArgs.push(...getCookiesArg());
 
         if (isAudio) {
           ytdlpArgs.push('-f', 'ba[protocol^=http]/ba/b', '-x', '--audio-format', ext, '-o', '-', itemUrl);

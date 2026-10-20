@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: downloader-backend
+    runtime: docker
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: CLIPSTREAM_DOWNLOAD_DIR
+        value: /app/downloads
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: 3
+    healthCheckPath: /api/health
+    disk:
+      name: downloads
+      mountPath: /app/downloads
+      sizeGB: 1

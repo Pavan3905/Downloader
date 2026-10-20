@@ -15,8 +15,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/70 dark:bg-black/50 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/[0.06] transition-colors duration-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full bg-black/40 backdrop-blur-xl border-b border-white/[0.06] transition-colors duration-200">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-[52px] flex items-center justify-between">
         {/* Brand Mark (Click to scroll to top) */}
         <button
           type="button"
@@ -25,30 +25,35 @@ export const Header: React.FC<HeaderProps> = ({
           title="Downloader - Home"
           aria-label="Downloader Home"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform duration-200">
-            <ArrowDownToLine className="w-4 h-4 stroke-[2.3] group-hover:translate-y-0.5 transition-transform duration-200" />
+          <div className="brand-tile w-7 h-7 rounded-lg bg-zinc-900/90 border border-white/10 flex items-center justify-center text-emerald-400 group-hover:border-emerald-500/30 group-hover:bg-zinc-800 transition-all duration-200 shadow-sm">
+            <ArrowDownToLine className="w-3.5 h-3.5 stroke-[2.2] group-hover:translate-y-0.5 transition-transform duration-200" />
           </div>
-          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
-            Downloader
-          </span>
+          <div className="flex items-center">
+            <span className="text-sm font-semibold tracking-tight text-zinc-100 group-hover:text-white transition-colors font-sans">
+              Downloader
+            </span>
+          </div>
         </button>
 
-        {/* Theme Toggle Button */}
-        {onToggleTheme && (
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 shadow-xs hover:shadow-md flex items-center justify-center text-slate-700 dark:text-zinc-200 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer active:scale-95"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle color theme"
-          >
-            {theme === 'light' ? (
-              <Moon className="w-4 h-4 stroke-[2.2]" />
-            ) : (
-              <Sun className="w-4 h-4 text-amber-400 stroke-[2.2]" />
-            )}
-          </button>
-        )}
+        {/* Action Controls */}
+        <div className="flex items-center gap-1">
+          {/* Theme toggle */}
+          {onToggleTheme && (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="theme-toggle-btn w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer select-none active:scale-95 group"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle color theme"
+            >
+              {theme === 'light' ? (
+                <Moon className="w-4 h-4 text-slate-700 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-300" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-400 group-hover:scale-110 group-hover:rotate-45 transition-transform duration-300" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

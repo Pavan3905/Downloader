@@ -15,26 +15,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <script>
-      (function() {
-        try {
-          var saved = localStorage.getItem('clipstream_theme');
-          if (saved === 'dark') {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-            document.documentElement.setAttribute('data-theme', 'dark');
-          } else {
-            document.documentElement.classList.add('light');
-            document.documentElement.classList.remove('dark');
-            document.documentElement.setAttribute('data-theme', 'light');
-          }
-        } catch (e) {
-          document.documentElement.classList.add('light');
-        }
-      })();
-    </script>
   </head>
-  <body class="antialiased min-h-screen transition-colors duration-200 selection:bg-blue-500/20 selection:text-blue-600">
+  <body class="bg-black text-zinc-100 antialiased min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

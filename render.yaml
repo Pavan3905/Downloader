@@ -16,7 +16,3 @@ services:
       - key: MAX_CONCURRENT_DOWNLOADS
         value: 3
     healthCheckPath: /api/health
-    disk:
-      name: downloads
-      mountPath: /app/downloads
-      sizeGB: 1

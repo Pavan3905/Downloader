@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE_WITH_YOUR_BACKEND_URL/api/:path*"
+      "destination": "https://downloader-backend-mxvs.onrender.com/api/:path*"
     },
     {
       "source": "/share/:path*",
-      "destination": "https://REPLACE_WITH_YOUR_BACKEND_URL/share/:path*"
+      "destination": "https://downloader-backend-mxvs.onrender.com/share/:path*"
     },
     {
       "source": "/(.*)",
